@@ -1,0 +1,86 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+  WAFI design system — SPEC §9.
+  Tema claro cálido, único (la identidad evita la estética de banco / dark mode).
+  Se adoptan los nombres semánticos de shadcn/ui como set canónico, con los
+  valores de la paleta WAFI. El brand_color de cada comercio se inyecta en
+  runtime para stamps y acentos (no vive acá).
+*/
+:root {
+  --radius: 0.875rem; /* 14px — radius de botones; cards derivan de acá */
+
+  --background: #fafaf8; /* off-white cálido */
+  --foreground: #1a1a1a; /* text primario */
+
+  --card: #ffffff; /* surface */
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+
+  --primary: #2d2d2d; /* casi negro, para CTAs */
+  --primary-foreground: #fafaf8;
+
+  --secondary: #f5f3ef; /* crema / surface-alt */
+  --secondary-foreground: #1a1a1a;
+
+  --muted: #f5f3ef;
+  --muted-foreground: #6b6560; /* text secundario */
+
+  --accent: #f5f3ef; /* hover sutil (semántica shadcn) */
+  --accent-foreground: #1a1a1a;
+
+  --destructive: #d94f3d; /* error */
+  --destructive-foreground: #fafaf8;
+
+  --border: #eceae6;
+  --input: #eceae6;
+  --ring: #2d2d2d;
+
+  /* Extras WAFI que shadcn no cubre */
+  --warning: #e8924a;
+  --success: #4a8c5c;
+  --stamp-empty: #e8e4df; /* stamp vacío; el activo usa el brand_color */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-stamp-empty: var(--stamp-empty);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-card: 20px;
+  --radius-pill: 999px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
