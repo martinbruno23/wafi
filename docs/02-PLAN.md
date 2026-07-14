@@ -32,33 +32,42 @@
 
 ### Tarea 0.2 — Scaffold
 
-- [ ] `git init` en la raíz del proyecto.
-- [ ] Crear app Next.js con TypeScript + Tailwind + App Router + src dir:
+> **Notas de ejecución (2026-07-13):** el scaffold quedó en **Next.js 16.2 + Tailwind v4 + React 19**. Tailwind v4 **no usa `tailwind.config.js`**: los tokens van en `@theme` dentro de `globals.css`. `shadcn init` de la v4.13 abre un menú de presets interactivo que además pisa los tokens, así que la base de shadcn (`components.json` + `cn()` en `src/lib/utils.ts` + deps `class-variance-authority clsx tailwind-merge lucide-react tw-animate-css`) se armó **a mano**, mapeando los nombres semánticos de shadcn (`--primary`, `--accent`, `--border`, …) a la paleta WAFI (ver SPEC §9). Fuente: **Inter** vía `next/font` con la variable `--font-inter`.
+
+- [x] `git init` en la raíz del proyecto.
+- [x] Crear app Next.js con TypeScript + Tailwind + App Router + src dir:
   ```bash
   npx create-next-app@latest . --typescript --tailwind --app --src-dir --import-alias "@/*" --no-eslint-strict 2>/dev/null || npx create-next-app@latest . --typescript --tailwind --app --src-dir --import-alias "@/*"
   ```
   (Si la carpeta no está vacía por los docs, crear en un temp y mover, preservando `docs/` y `CLAUDE.md`.)
-- [ ] Instalar dependencias base:
+- [x] Instalar dependencias base:
   ```bash
   npm i @supabase/supabase-js @supabase/ssr zod
   npm i -D vitest @vitest/coverage-v8
   npx shadcn@latest init
   ```
-- [ ] Configurar Vitest: crear `vitest.config.ts` con `test: { include: ['src/**/*.test.ts'] }` y script `"test": "vitest run"` en package.json.
-- [ ] Aplicar tokens del design system (SPEC §9) como CSS variables en `src/app/globals.css` y en la config de Tailwind (colores `background`, `surface`, `surface-alt`, `accent`, etc.).
-- [ ] `.env.local` + `.env.example` con: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`. Verificar que `.env.local` esté en `.gitignore`.
-- [ ] Home provisoria en `src/app/page.tsx`: logo/wordmark "WAFI" centrado sobre `--background`.
-- [ ] Verificar: `npm run dev` levanta y la home carga sin errores de consola.
-- [ ] Commit: `chore: scaffold next.js app with design tokens`
+- [x] Configurar Vitest: crear `vitest.config.ts` con `test: { include: ['src/**/*.test.ts'] }` y script `"test": "vitest run"` en package.json.
+- [x] Aplicar tokens del design system (SPEC §9) como CSS variables en `src/app/globals.css` (en Tailwind v4 los tokens van en `@theme inline`, no en `tailwind.config.js`).
+- [x] `.env.local` + `.env.example` con: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`. `.env.local` en `.gitignore`; `.env.example` exceptuado con `!.env.example` para versionarlo.
+- [x] Home provisoria en `src/app/page.tsx`: wordmark "WAFI" centrado sobre `--background`.
+- [x] Verificar: `npm run dev` levanta y la home carga sin errores (HTTP 200, wordmark + tagline + `lang="es-AR"`). `npm run build` y `npm test` pasan.
+- [x] Commit: `chore: scaffold Next.js app with WAFI design system and Supabase clients`
 
 ### Tarea 0.3 — Clientes Supabase + deploy
 
-- [ ] Crear `src/lib/supabase/admin.ts` (cliente con service_role, solo import desde server) y `src/lib/supabase/server.ts` + `src/lib/supabase/client.ts` (SSR helpers de `@supabase/ssr` para auth de dashboard).
-- [ ] Deploy: `vercel` (crear proyecto) → cargar env vars (`vercel env add` por cada una) → `vercel --prod`.
-- [ ] Verificar: la URL pública de Vercel muestra la home.
-- [ ] Commit: `chore: supabase clients and vercel deploy`
+- [x] Crear `src/lib/supabase/admin.ts` (cliente con service_role + `import "server-only"`) y `src/lib/supabase/server.ts` + `src/lib/supabase/client.ts` (helpers de `@supabase/ssr` 0.12 con patrón `getAll`/`setAll`; `cookies()` es async en Next 16).
+- [ ] ⚠️ **BLOQUEADO (TAREA HUMANA 0.1):** Deploy: `vercel` (crear proyecto) → cargar env vars (`vercel env add` por cada una) → `vercel --prod`. Requiere cuenta de Vercel + credenciales reales de Supabase. El CLI de Vercel **no está instalado** (`npm i -g vercel`).
+- [ ] ⚠️ **BLOQUEADO:** Verificar: la URL pública de Vercel muestra la home.
+- [ ] Commit: `chore: supabase clients and vercel deploy` (el código de los clientes ya se commiteó junto al scaffold).
 
-**Definición de terminado Etapa 0:** URL pública viva + `npm test` corre (aunque sin tests aún) + env vars en Vercel.
+**Definición de terminado Etapa 0:** URL pública viva + `npm test` corre + env vars en Vercel. — **Estado: parcial.** Local 100% verde (build + test + dev). Falta el deploy, bloqueado por la Tarea 0.1 (cuentas). Ver instrucciones al pie de esta etapa.
+
+### ⚠️ Para cerrar la Etapa 0 (Martín)
+
+1. Crear el proyecto en Supabase y copiar las 3 credenciales en `.env.local` (reemplazar los valores vacíos).
+2. `npm i -g vercel` → `vercel login` → `vercel link` (o `vercel` para crear el proyecto).
+3. Cargar las 4 env vars en Vercel: `vercel env add NEXT_PUBLIC_SUPABASE_URL`, `...ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL` (production).
+4. `vercel --prod` y confirmar que la home carga en la URL pública. Marcar los checkboxes de arriba.
 
 ---
 
@@ -234,7 +243,7 @@
 ### Tarea 3.1 — Auth del dashboard
 
 - [ ] Login en `src/app/dashboard/login/page.tsx`: email + password contra Supabase Auth (`signInWithPassword`). Sin signup público (alta manual, SPEC §5.1).
-- [ ] `src/middleware.ts`: proteger `/dashboard/*` (excepto login) — sin sesión → redirect a login.
+- [ ] `src/proxy.ts`: proteger `/dashboard/*` (excepto login) — sin sesión → redirect a login. (En Next.js 16 el archivo se llama `proxy.ts`, no `middleware.ts`; misma semántica de interceptación + refresh de sesión de Supabase.)
 - [ ] Layout `src/app/dashboard/layout.tsx`: sidebar/topbar con navegación (Scanner · Actividad · Mi tarjeta · Salir), nombre del comercio. Mobile-first: el Scanner es la pantalla que el local usa desde el celu.
 - [ ] Verificar: login con `demo@wafi.test` del seed entra; URL directa sin sesión redirige.
 - [ ] Commit: `feat: dashboard auth and layout`

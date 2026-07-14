@@ -302,7 +302,9 @@ Se hereda la identidad del spec v1: minimalista, cálido, artesanal-digital. Est
 | Stamp activo | `brand_color` del comercio |
 | Stamp vacío | `#E8E4DF` |
 
-- Tipografía: sans humanista (Inter o similar de Google Fonts). Display 32/700 · Title 22/700 · Subtitle 17/600 · Body 15/400 · Caption 13/400.
+**Implementación (Tailwind v4 + shadcn/ui):** los valores de arriba son la paleta canónica, pero en el código se exponen con los **nombres semánticos de shadcn/ui** para que sus componentes funcionen sin fricción. Mapeo: `--foreground`=text-primary, `--card`/`--popover`=surface, `--primary`=accent (CTA #2D2D2D), `--secondary`/`--muted`/`--accent`(shadcn, hover)=surface-alt, `--muted-foreground`=text-secondary, `--destructive`=error, `--border`/`--input`=border, `--ring`=#2D2D2D. Los extras WAFI (`--warning`, `--success`, `--stamp-empty`) se agregan aparte. Tokens definidos en `src/app/globals.css` bajo `@theme inline` (Tailwind v4 no usa `tailwind.config.js`). Tema claro único, sin dark mode.
+
+- Tipografía: sans humanista (Inter de Google Fonts, vía `next/font`). Display 32/700 · Title 22/700 · Subtitle 17/600 · Body 15/400 · Caption 13/400.
 - Radius: cards 20px · botones 14px · pills 999px. Spacing en múltiplos de 4.
 - El `brand_color` del comercio tiñe: stamps activos, acentos de su landing de alta, y su pass.
 - Anti-referencias (vigentes de v1): sin gradientes pesados, sin sombras excesivas, sin mayúsculas en navegación, animaciones < 500ms.

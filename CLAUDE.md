@@ -20,7 +20,7 @@ WAFI es una plataforma de fidelización para cafés de especialidad. **No hay ap
 ## Estado actual
 
 - [x] Spec y plan documentados (2026-07-13)
-- [ ] Etapa 0 — Setup del proyecto
+- [~] Etapa 0 — Setup del proyecto (scaffold + clientes Supabase hechos y verificados local; **falta el deploy a Vercel**, bloqueado por cuentas — ver "Para cerrar la Etapa 0" en el plan)
 - [ ] Etapa 1 — Core de dominio
 - [ ] Etapa 2 — Enrolamiento + Google Wallet
 - [ ] Etapa 3 — Dashboard + Scanner
