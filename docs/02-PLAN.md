@@ -56,18 +56,17 @@
 ### Tarea 0.3 — Clientes Supabase + deploy
 
 - [x] Crear `src/lib/supabase/admin.ts` (cliente con service_role + `import "server-only"`) y `src/lib/supabase/server.ts` + `src/lib/supabase/client.ts` (helpers de `@supabase/ssr` 0.12 con patrón `getAll`/`setAll`; `cookies()` es async en Next 16).
-- [ ] ⚠️ **BLOQUEADO (TAREA HUMANA 0.1):** Deploy: `vercel` (crear proyecto) → cargar env vars (`vercel env add` por cada una) → `vercel --prod`. Requiere cuenta de Vercel + credenciales reales de Supabase. El CLI de Vercel **no está instalado** (`npm i -g vercel`).
-- [ ] ⚠️ **BLOQUEADO:** Verificar: la URL pública de Vercel muestra la home.
-- [ ] Commit: `chore: supabase clients and vercel deploy` (el código de los clientes ya se commiteó junto al scaffold).
+- [x] Deploy: hecho vía importación del repo de GitHub en la web de Vercel (en vez de `vercel --prod` por CLI — camino equivalente, con la ventaja de que ahora cada push a `main` deploya solo). Repo: `github.com/martinbruno23/wafi`.
+- [x] Verificar: `https://wafi-iota.vercel.app/` responde HTTP 200 con el wordmark WAFI y la tagline.
+- [x] Commit: código de los clientes ya commiteado junto al scaffold; el deploy en sí no genera commit (vive en la config de Vercel).
 
-**Definición de terminado Etapa 0:** URL pública viva + `npm test` corre + env vars en Vercel. — **Estado: parcial.** Local 100% verde (build + test + dev). Falta el deploy, bloqueado por la Tarea 0.1 (cuentas). Ver instrucciones al pie de esta etapa.
+**Definición de terminado Etapa 0:** URL pública viva + `npm test` corre + env vars en Vercel. — **✅ Cumplida (2026-07-24).** URL de producción: `https://wafi-iota.vercel.app/`.
 
-### ⚠️ Para cerrar la Etapa 0 (Martín)
+### Notas de ejecución (Martín, 2026-07-24)
 
-1. Crear el proyecto en Supabase y copiar las 3 credenciales en `.env.local` (reemplazar los valores vacíos).
-2. `npm i -g vercel` → `vercel login` → `vercel link` (o `vercel` para crear el proyecto).
-3. Cargar las 4 env vars en Vercel: `vercel env add NEXT_PUBLIC_SUPABASE_URL`, `...ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL` (production).
-4. `vercel --prod` y confirmar que la home carga en la URL pública. Marcar los checkboxes de arriba.
+- El deploy se hizo por la **web de Vercel** (Import de GitHub) en vez de por CLI — quedó documentado como alternativa válida a los pasos originales de esta tarea.
+- Se creó el repo `github.com/martinbruno23/wafi` (privado) y se pusheó `main` con `git remote add origin` + `git push -u origin main`.
+- Pendiente de confirmar: cargar `NEXT_PUBLIC_APP_URL=https://wafi-iota.vercel.app` en Vercel (Settings → Environment Variables) y hacer Redeploy — sin esto, la env var sigue apuntando a `localhost:3000` en producción.
 
 ---
 
