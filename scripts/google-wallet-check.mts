@@ -28,6 +28,7 @@ const merchant = {
   prizeDescription: "Café gratis",
   logoUrl: null,
   isActive: true,
+  googleClassId: null,
 };
 
 const card = {
@@ -38,6 +39,7 @@ const card = {
   currentStamps: 0,
   totalStamps: 0,
   prizesRedeemed: 0,
+  googleObjectId: null,
 };
 
 let failures = 0;

@@ -13,6 +13,8 @@ export type Merchant = {
   prizeDescription: string;
   logoUrl: string | null;
   isActive: boolean;
+  /** LoyaltyClass de Google Wallet, si ya se creó (SPEC §8.1). */
+  googleClassId: string | null;
 };
 
 export type Card = {
@@ -23,6 +25,8 @@ export type Card = {
   currentStamps: number;
   totalStamps: number;
   prizesRedeemed: number;
+  /** LoyaltyObject de Google Wallet, si ya se emitió el pass. */
+  googleObjectId: string | null;
 };
 
 export type Customer = {

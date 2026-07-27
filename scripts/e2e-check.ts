@@ -61,15 +61,22 @@ async function main() {
       email: `e2e-${Date.now()}@test.com`,
       platform: "unknown",
     }),
-  }).then((r) => r.json());
+  }).then((r) => r.json() as Promise<{ cardId: string; existing: boolean; google?: { saveUrl: string } }>);
 
   const { data: card } = await admin
     .from("cards")
-    .select("qr_token, current_stamps")
+    .select("qr_token, current_stamps, google_object_id")
     .eq("id", enroll.cardId)
     .single();
   const qrToken = card!.qr_token as string;
   check("enrolamiento crea la tarjeta", card!.current_stamps === 0, "arranca en 0 sellos");
+  check(
+    "enrolamiento emite el pass de Google Wallet",
+    typeof enroll.google?.saveUrl === "string" &&
+      enroll.google.saveUrl.startsWith("https://pay.google.com/gp/v/save/") &&
+      Boolean(card!.google_object_id),
+    card!.google_object_id ? `objeto ${card!.google_object_id}` : "sin google_object_id",
+  );
 
   // --- Scan ---
   const scan = await fetch(`${BASE}/api/scan/${qrToken}`, { headers: { cookie } });

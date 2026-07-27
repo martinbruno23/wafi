@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { enrollCustomer, EnrollmentError } from "@/lib/services/enrollment";
+import { issueGooglePass } from "@/lib/services/pass-issuance";
 import { handleRoute, HttpError } from "@/lib/api/response";
 import { clientIp, enforceRateLimit } from "@/lib/api/rate-limit";
 
@@ -33,8 +34,17 @@ export async function POST(request: Request) {
     const { merchantSlug, email } = parsed.data;
 
     try {
-      const { card, existing } = await enrollCustomer(merchantSlug, email);
-      return NextResponse.json({ cardId: card.id, existing });
+      const { card, merchant, existing } = await enrollCustomer(merchantSlug, email);
+
+      // El pass de Google se emite siempre que se pueda: el cliente puede
+      // estar en Android o volver a agregarlo desde otro dispositivo.
+      const saveUrl = await issueGooglePass(card, merchant, email);
+
+      return NextResponse.json({
+        cardId: card.id,
+        existing,
+        ...(saveUrl ? { google: { saveUrl } } : {}),
+      });
     } catch (error) {
       if (error instanceof EnrollmentError) {
         if (error.code === "MERCHANT_NOT_FOUND") {

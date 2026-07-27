@@ -35,6 +35,7 @@ type MerchantRow = {
   prize_description: string;
   logo_url: string | null;
   is_active: boolean;
+  google_class_id?: string | null;
 };
 
 type CardRow = {
@@ -45,6 +46,7 @@ type CardRow = {
   current_stamps: number;
   total_stamps: number;
   prizes_redeemed: number;
+  google_object_id?: string | null;
 };
 
 export function toMerchant(row: MerchantRow): Merchant {
@@ -57,6 +59,7 @@ export function toMerchant(row: MerchantRow): Merchant {
     prizeDescription: row.prize_description,
     logoUrl: row.logo_url,
     isActive: row.is_active,
+    googleClassId: row.google_class_id ?? null,
   };
 }
 
@@ -69,13 +72,14 @@ export function toCard(row: CardRow): Card {
     currentStamps: row.current_stamps,
     totalStamps: row.total_stamps,
     prizesRedeemed: row.prizes_redeemed,
+    googleObjectId: row.google_object_id ?? null,
   };
 }
 
-const MERCHANT_COLS =
-  "id, slug, name, brand_color, stamps_required, prize_description, logo_url, is_active";
-const CARD_COLS =
-  "id, customer_id, merchant_id, qr_token, current_stamps, total_stamps, prizes_redeemed";
+export const MERCHANT_COLS =
+  "id, slug, name, brand_color, stamps_required, prize_description, logo_url, is_active, google_class_id";
+export const CARD_COLS =
+  "id, customer_id, merchant_id, qr_token, current_stamps, total_stamps, prizes_redeemed, google_object_id";
 
 /**
  * Da de alta a un cliente en un comercio — SPEC §5.2.
