@@ -177,12 +177,12 @@
 
 ### Tarea 2.1 — ⚠️ TAREA HUMANA: credenciales Google
 
-- [ ] Confirmar hecho lo de Tarea 0.1 (Issuer ID + service account JSON autorizada en el issuer).
-- [ ] Cargar env vars (local y Vercel): `GOOGLE_WALLET_ISSUER_ID`, `GOOGLE_SA_EMAIL`, `GOOGLE_SA_PRIVATE_KEY` (la private key del JSON, con `\n` escapados).
+- [x] Confirmar hecho lo de Tarea 0.1 (Issuer ID + service account JSON autorizada en el issuer).
+- [x] Cargar env vars (local y Vercel): `GOOGLE_WALLET_ISSUER_ID`, `GOOGLE_SA_EMAIL`, `GOOGLE_SA_PRIVATE_KEY` (la private key del JSON, con `\n` escapados).
 
 ### Tarea 2.2 — Cliente de Google Wallet
 
-- [ ] Crear `src/lib/wallet/google.ts` usando `google-auth-library` (`npm i google-auth-library jsonwebtoken` + `@types/jsonwebtoken`):
+- [x] Crear `src/lib/wallet/google.ts` usando `google-auth-library` (`npm i google-auth-library jsonwebtoken` + `@types/jsonwebtoken`):
   ```ts
   const auth = new GoogleAuth({
     credentials: { client_email: env.GOOGLE_SA_EMAIL, private_key: env.GOOGLE_SA_PRIVATE_KEY },
@@ -216,10 +216,16 @@
   //   payload: { loyaltyObjects: [{ id: objectId }] } }, PRIVATE_KEY, { algorithm: 'RS256' })
   // → `https://pay.google.com/gp/v/save/${token}`
   ```
-- [ ] Integrar en `/api/enroll`: si `platform === 'google'` (o unknown), `ensureLoyaltyClass` + `createLoyaltyObject` (si la card no tiene `google_object_id`) + responder `google.saveUrl`. Si la card ya existía con objeto creado → regenerar saveUrl igual (re-agregar pass es válido).
-- [ ] Completar `notifyWallets(card)` en `wallet-sync.ts`: si `card.google_object_id` → `updateLoyaltyObject`. Errores de push NUNCA rompen el stamp (try/catch + log).
-- [ ] Test unitario de `buildSaveUrl` (decodificar el JWT y verificar claims) con una key RSA de prueba.
-- [ ] Commit: `feat: google wallet integration`
+- [x] Integrar en `/api/enroll`: si `platform === 'google'` (o unknown), `ensureLoyaltyClass` + `createLoyaltyObject` (si la card no tiene `google_object_id`) + responder `google.saveUrl`. Si la card ya existía con objeto creado → regenerar saveUrl igual (re-agregar pass es válido).
+- [x] Completar `notifyWallets(card)` en `wallet-sync.ts`: si `card.google_object_id` → `updateLoyaltyObject`. Errores de push NUNCA rompen el stamp (try/catch + log).
+- [x] Test unitario de `buildSaveUrl` (decodificar el JWT y verificar claims) con una key RSA de prueba.
+- [x] Commit: `feat: google wallet integration`
+
+**Notas de ejecución (2026-07-27):**
+- **Issuer ID `3388000000023180477`** ("Wafi"). No hizo falta buscarlo a mano: la service account lo devuelve con `GET /walletobjects/v1/issuer`.
+- **Google rechaza crear una LoyaltyClass sin `programLogo`** (error literal: *"LoyaltyClass cannot be created without a program logo"*). Se generó un logo por defecto de WAFI (`public/wafi-logo.png`, 660×660, script `scripts/make-logo.mts`) para los comercios que no cargaron el suyo.
+- **La URL del logo debe ser pública**: Google la descarga desde sus servidores, así que `localhost` no sirve. Por eso `env.publicAssetsUrl` cae a la URL de producción cuando se corre en local.
+- **Verificado contra la API real** (`npx tsx --conditions react-server scripts/google-wallet-check.mts`) y en el flujo completo: al sellar, el pass pasa de "0 de 5 sellos" → "1 de 5" → "5 de 5" con el módulo "🎉 Premio disponible". El PATCH lo hace `notifyWallets`; Google se encarga del push al teléfono.
 
 ### Tarea 2.3 — Landing de alta `/j/[slug]` ✅ (hecha antes que 2.1/2.2; no dependía de credenciales)
 
