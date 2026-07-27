@@ -221,16 +221,17 @@
 - [ ] Test unitario de `buildSaveUrl` (decodificar el JWT y verificar claims) con una key RSA de prueba.
 - [ ] Commit: `feat: google wallet integration`
 
-### Tarea 2.3 — Landing de alta `/j/[slug]`
+### Tarea 2.3 — Landing de alta `/j/[slug]` ✅ (hecha antes que 2.1/2.2; no dependía de credenciales)
 
-- [ ] Crear `src/app/j/[slug]/page.tsx` (server component que fetchea el merchant; 404 si no existe o inactivo) + form client component:
-  - Layout mobile-first: logo del café, nombre, texto del premio con `stamps_required`, acento en `brand_color`.
-  - Un input de email (validación zod en cliente y server) + botón primario "Agregar a mi Wallet".
+- [x] Crear `src/app/j/[slug]/page.tsx` (server component que fetchea el merchant; 404 si no existe o inactivo) + form client component (`enroll-form.tsx`):
+  - Layout mobile-first: logo del café (o inicial sobre brand_color), nombre, fila de sellos de muestra, premio, acentos en `brand_color` con contraste calculado (`src/lib/color.ts`, testeado).
+  - Un input de email (zod en cliente; el server ya validaba) + botón primario "Agregar a mi Wallet".
   - Detección de plataforma por user-agent en el server component → prop `platform`.
-  - Submit → POST `/api/enroll` → según respuesta: Android: redirect a `saveUrl`; iOS (hasta Etapa 4): mensaje "Apple Wallet muy pronto — te avisamos por email" (guardar el enroll igual, la card queda creada); desktop: mostrar QR (usar `qrcode` npm → dataURL) apuntando a la misma URL `/j/[slug]`.
-  - Si `existing: true` → mostrar "Ya tenés esta tarjeta ☕" + botón "Volver a agregarla a mi Wallet" (mismo saveUrl).
-- [ ] Estados de error con copy claro ("No pudimos crear tu tarjeta, probá de nuevo").
-- [ ] Commit: `feat: enrollment landing /j/[slug]`
+  - Submit → POST `/api/enroll` → Android: redirect a `saveUrl` **(cableado; se activa cuando 2.2 entregue el saveUrl en la respuesta)**; iOS: "Apple Wallet llega muy pronto" con la card creada igual; desktop: QR a la misma URL (`qrcode` con import dinámico para no engordar el bundle mobile).
+  - `existing: true` → "Ya tenés esta tarjeta ☕" + botón "Volver a agregarla a mi Wallet".
+- [x] Estados de error con copy claro (genérico, 429 y sin conexión).
+- [x] Commit: `feat: enrollment landing /j/[slug]`
+- **Verificado en navegador (preview local)**: alta nueva → "¡Tu tarjeta está lista!" + QR; mismo email de nuevo → "Ya tenés esta tarjeta ☕"; 404 con slug inexistente; consola limpia. El tramo Android→Google Wallet queda pendiente de 2.1/2.2.
 
 ### Tarea 2.4 — Prueba end-to-end real
 
