@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed": "tsx scripts/seed.ts",
+    "e2e": "tsx scripts/e2e-check.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.1",

@@ -76,12 +76,12 @@
 
 ### Tarea 1.1 — Migraciones de schema
 
-- [ ] Instalar CLI de Supabase (`npm i -D supabase`), `npx supabase init`, `npx supabase link --project-ref <ref>`.
-- [ ] Crear `supabase/migrations/0001_core.sql` con **exactamente** el schema del SPEC §6 (merchants, merchant_users, customers, cards, stamp_events, apple_registrations), más:
+- [x] Instalar CLI de Supabase (`npm i -D supabase`), `npx supabase init`, `npx supabase link --project-ref <ref>`.
+- [x] Crear `supabase/migrations/0001_core.sql` con **exactamente** el schema del SPEC §6 (merchants, merchant_users, customers, cards, stamp_events, apple_registrations), más:
   - `alter table ... enable row level security;` en todas.
   - Policy de lectura para dashboard: miembros de `merchant_users` leen sus `merchants`, `cards`, `stamp_events` (filtrando por `merchant_id in (select merchant_id from merchant_users where user_id = auth.uid())`).
   - Índices: `cards(qr_token)`, `cards(merchant_id)`, `stamp_events(card_id, created_at desc)`, `apple_registrations(card_id) where active`.
-- [ ] Crear `supabase/migrations/0002_rpc.sql` con dos funciones RPC transaccionales (`security definer`):
+- [x] Crear `supabase/migrations/0002_rpc.sql` con dos funciones RPC transaccionales (`security definer`):
   ```sql
   create or replace function apply_stamp(p_card_id uuid, p_created_by uuid)
   returns cards language plpgsql security definer as $$
@@ -114,24 +114,24 @@
     return v_card;
   end $$;
   ```
-- [ ] `npx supabase db push` y verificar en Supabase Studio que las tablas existen.
-- [ ] Commit: `feat: core schema, RLS and stamp/redeem RPCs`
+- [x] `npx supabase db push` y verificar en Supabase Studio que las tablas existen.
+- [x] Commit: `feat: core schema, RLS and stamp/redeem RPCs`
 
 ### Tarea 1.2 — Dominio puro + tests
 
-- [ ] Crear `src/lib/domain/card.ts` con tipos (`Card`, `Merchant`, `CardScanState`) y funciones puras:
+- [x] Crear `src/lib/domain/card.ts` con tipos (`Card`, `Merchant`, `CardScanState`) y funciones puras:
   ```ts
   export function hasPrize(card: { currentStamps: number }, merchant: { stampsRequired: number }): boolean
   export function maskEmail(email: string): string   // "mar***@gmail.com"
   export function toScanState(card, merchant, customer): CardScanState // shape del GET /api/scan
   ```
-- [ ] Crear `src/lib/domain/card.test.ts` cubriendo: hasPrize en el límite exacto, por encima, por debajo; maskEmail con emails cortos y largos; toScanState completo.
-- [ ] Verificar: `npm test` → todo verde.
-- [ ] Commit: `feat: domain logic with tests`
+- [x] Crear `src/lib/domain/card.test.ts` cubriendo: hasPrize en el límite exacto, por encima, por debajo; maskEmail con emails cortos y largos; toScanState completo.
+- [x] Verificar: `npm test` → todo verde.
+- [x] Commit: `feat: domain logic with tests`
 
 ### Tarea 1.3 — Servicio de enrolamiento
 
-- [ ] Crear `src/lib/services/enrollment.ts` exportando:
+- [x] Crear `src/lib/services/enrollment.ts` exportando:
   ```ts
   // Upsert de customer por email (lowercase/trim) + card única por (customer, merchant).
   // Devuelve la card y si ya existía.
@@ -139,27 +139,35 @@
     Promise<{ card: Card; merchant: Merchant; existing: boolean }>
   ```
   Implementación: buscar merchant activo por slug (404 si no), upsert customer (`on conflict (email)`), `insert ... on conflict (customer_id, merchant_id) do nothing` + select para detectar existente.
-- [ ] Test de integración liviano `src/lib/services/enrollment.test.ts` mockeando el cliente de Supabase (verificar: normalización de email, `existing=true` en segundo enroll, error con slug inválido).
-- [ ] Commit: `feat: enrollment service`
+- [x] Test de integración liviano `src/lib/services/enrollment.test.ts` mockeando el cliente de Supabase (verificar: normalización de email, `existing=true` en segundo enroll, error con slug inválido).
+- [x] Commit: `feat: enrollment service`
 
 ### Tarea 1.4 — Endpoints de negocio
 
-- [ ] `src/app/api/merchants/[slug]/route.ts` — GET público (SPEC §7).
-- [ ] `src/app/api/enroll/route.ts` — POST público. Validar body con zod. Por ahora responde `{ cardId, existing }` (los links de wallet se agregan en Etapas 2 y 4). Rate limit mínimo: máx 10 enrolls por IP por hora (tabla `rate_limits` o chequeo por count de customers creados desde esa IP; MVP simple).
-- [ ] `src/lib/auth/merchant.ts` — helper `requireMerchantSession(request)` que resuelve sesión Supabase + membership en `merchant_users` → `{ userId, merchantId }` o lanza 401/403.
-- [ ] `src/app/api/scan/[qrToken]/route.ts` — GET autenticado: busca card por `qr_token`, valida `card.merchant_id === session.merchantId` (403 `WRONG_MERCHANT`), responde `toScanState(...)`.
-- [ ] `src/app/api/cards/[cardId]/stamp/route.ts` y `.../redeem/route.ts` — POST autenticados: validan pertenencia, llaman al RPC (`supabase.rpc('apply_stamp', ...)`), responden estado nuevo. Dejar un hook vacío `notifyWallets(card)` en `src/lib/services/wallet-sync.ts` (no-op por ahora; Etapas 2 y 4 lo completan).
-- [ ] Crear `scripts/seed.ts` (correr con `npx tsx scripts/seed.ts`): crea un merchant demo ("Café de Prueba", slug `cafe-prueba`, 5 sellos, premio "Café gratis") + un usuario de dashboard `demo@wafi.test` con password, vinculado en `merchant_users`.
-- [ ] Verificar por curl contra `npm run dev`:
+- [x] `src/app/api/merchants/[slug]/route.ts` — GET público (SPEC §7).
+- [x] `src/app/api/enroll/route.ts` — POST público. Validar body con zod. Por ahora responde `{ cardId, existing }` (los links de wallet se agregan en Etapas 2 y 4). Rate limit mínimo: máx 10 enrolls por IP por hora (tabla `rate_limits` o chequeo por count de customers creados desde esa IP; MVP simple).
+- [x] `src/lib/auth/merchant.ts` — helper `requireMerchantSession(request)` que resuelve sesión Supabase + membership en `merchant_users` → `{ userId, merchantId }` o lanza 401/403.
+- [x] `src/app/api/scan/[qrToken]/route.ts` — GET autenticado: busca card por `qr_token`, valida `card.merchant_id === session.merchantId` (403 `WRONG_MERCHANT`), responde `toScanState(...)`.
+- [x] `src/app/api/cards/[cardId]/stamp/route.ts` y `.../redeem/route.ts` — POST autenticados: validan pertenencia, llaman al RPC (`supabase.rpc('apply_stamp', ...)`), responden estado nuevo. Dejar un hook vacío `notifyWallets(card)` en `src/lib/services/wallet-sync.ts` (no-op por ahora; Etapas 2 y 4 lo completan).
+- [x] Crear `scripts/seed.ts` (correr con `npx tsx scripts/seed.ts`): crea un merchant demo ("Café de Prueba", slug `cafe-prueba`, 5 sellos, premio "Café gratis") + un usuario de dashboard `demo@wafi.test` con password, vinculado en `merchant_users`.
+- [x] Verificar por curl contra `npm run dev`:
   ```bash
   curl -s localhost:3000/api/merchants/cafe-prueba            # → datos del merchant
   curl -s -X POST localhost:3000/api/enroll -H 'content-type: application/json' \
     -d '{"merchantSlug":"cafe-prueba","email":"test@test.com","platform":"unknown"}'  # → cardId
   # stamp/redeem: probar con la sesión del dashboard en Etapa 3, o temporalmente via Supabase Studio + RPC
   ```
-- [ ] Commit: `feat: business endpoints (enroll, scan, stamp, redeem)`
+- [x] Commit: `feat: business endpoints (enroll, scan, stamp, redeem)`
 
-**Definición de terminado Etapa 1:** `npm test` verde; enroll por curl crea customer+card visibles en Supabase Studio; RPCs de stamp/redeem funcionan (probados al menos desde SQL editor: `select apply_stamp('<card-id>', null);`).
+**Definición de terminado Etapa 1:** `npm test` verde; enroll por curl crea customer+card visibles en Supabase Studio; RPCs de stamp/redeem funcionan. — **✅ Cumplida (2026-07-24)**, y se fue más lejos de lo pedido: el flujo autenticado completo quedó verificado por HTTP real, no solo desde el SQL editor.
+
+### Notas de ejecución (2026-07-24)
+
+- **Migraciones aplicadas a mano por el SQL Editor de Supabase**, no con `supabase db push` (evita el login interactivo del CLI y la contraseña de la base). Los archivos en `supabase/migrations/` son la fuente de verdad: si se agrega una nueva, hay que pegarla igual. Se sumó una tercera, `0003_rate_limits.sql`, que el plan original no preveía.
+- **Verificación E2E automatizada:** `scripts/e2e-check.ts` (`npm run e2e` con el dev server levantado) simula la sesión del comercio y recorre scan → 5 sellos → canje, más los rechazos. 11 chequeos, todos verdes. Cubre lo que el plan difería a la Etapa 3.
+- **Seguridad confirmada por test, no por lectura de código:** tarjeta de otro comercio → 403 `WRONG_MERCHANT` (en scan y en stamp); sin sesión → 401; canje sin premio → 409. El scan no filtra el `qr_token` ni el email completo.
+- **Ledger verificado:** 5 eventos `stamp` + 1 `redeem` con `stamps_delta = -5`.
+- Credenciales del comercio demo: `demo@wafi.test` / `wafi-demo-1234` (creadas por `npx tsx scripts/seed.ts`).
 
 ---
 
