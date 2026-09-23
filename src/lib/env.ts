@@ -44,7 +44,39 @@ export const env = {
   get googleSaPrivateKey(): string {
     return required("GOOGLE_SA_PRIVATE_KEY").replace(/\\n/g, "\n");
   },
+
+  // --- Apple Wallet (SPEC §8.2) -------------------------------------------
+  // El certificado intermedio WWDR es público y vive en el código
+  // (src/lib/wallet/apple/wwdr.ts); acá solo va lo que es de la cuenta.
+  get appleTeamId(): string {
+    return required("APPLE_TEAM_ID");
+  },
+  get applePassTypeId(): string {
+    return required("APPLE_PASS_TYPE_ID");
+  },
+  /** Certificado del Pass Type ID, PEM en base64 (una sola línea). */
+  get applePassCertPem(): string {
+    return Buffer.from(required("APPLE_PASS_CERT_B64"), "base64").toString("utf8");
+  },
+  /** Clave privada del Pass Type ID, PEM en base64 (una sola línea). */
+  get applePassKeyPem(): string {
+    return Buffer.from(required("APPLE_PASS_KEY_B64"), "base64").toString("utf8");
+  },
+  /** Opcional: solo si la clave se exportó con contraseña. */
+  get applePassKeyPassphrase(): string | undefined {
+    return process.env.APPLE_PASS_KEY_PASSPHRASE || undefined;
+  },
 };
+
+/** true si la integración con Apple Wallet está configurada. */
+export function isAppleWalletConfigured(): boolean {
+  return Boolean(
+    process.env.APPLE_TEAM_ID &&
+      process.env.APPLE_PASS_TYPE_ID &&
+      process.env.APPLE_PASS_CERT_B64 &&
+      process.env.APPLE_PASS_KEY_B64,
+  );
+}
 
 /** true si la integración con Google Wallet está configurada. */
 export function isGoogleWalletConfigured(): boolean {

@@ -5,7 +5,7 @@ WAFI es una plataforma de fidelización para cafés de especialidad. **No hay ap
 ## Documentos fuente (leer en este orden)
 
 1. [docs/01-SPEC.md](docs/01-SPEC.md) — Qué es el producto, arquitectura, flujos, modelo de datos, API, diseño. **La fuente de verdad de toda decisión.**
-2. [docs/02-PLAN.md](docs/02-PLAN.md) — Manual de ejecución por etapas con tareas y checkboxes. **Ejecutar en orden, sin saltear etapas.**
+2. [docs/02-PLAN.md](docs/02-PLAN.md) — Manual de ejecución por etapas con tareas y checkboxes. **Ejecutar en orden, sin saltear etapas** — excepción: la Etapa 4 (Apple) va antes que la 3 (Dashboard), por decisión de Martín del 2026-09-23 (ver nota al inicio de la Etapa 4).
 
 ## Reglas del proyecto
 
@@ -27,8 +27,8 @@ WAFI es una plataforma de fidelización para cafés de especialidad. **No hay ap
 - [x] Etapa 0 — Setup del proyecto (deploy en `https://wafi-iota.vercel.app/`, repo en `github.com/martinbruno23/wafi`)
 - [x] Etapa 1 — Core de dominio (schema + RLS + RPCs aplicados; 5 endpoints; 21 unit tests + E2E `npm run e2e` en verde)
 - [~] Etapa 2 — Enrolamiento + Google Wallet (todo andando en producción y verificado contra la API de Google; falta probar en un Android real y pedir la publicación del issuer)
+- [ ] Etapa 4 — Apple Wallet ← **en curso, va antes que la 3**
 - [ ] Etapa 3 — Dashboard + Scanner
-- [ ] Etapa 4 — Apple Wallet
 - [ ] Etapa 5 — Landing del cliente + piloto
 
 Actualizar esta lista al cerrar cada etapa.

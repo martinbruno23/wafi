@@ -299,6 +299,10 @@
 
 ## Etapa 4 — Apple Wallet
 
+> **⚠️ Orden cambiado (decisión de Martín, 2026-09-23): esta etapa se ejecuta ANTES que la Etapa 3.** Motivos: (1) Martín usa iPhone y no tiene Android para probar; (2) el primer cliente previsto (Batata Cofi, café con 163 socios) ya carga los puntos solo desde FUDO, así que lo que le falta es la wallet, no el scanner; (3) la publicación del issuer de Google quedó trabada (el perfil pide datos que Martín como persona física no tiene), y Apple no tiene proceso de publicación: con la cuenta de developer, cualquier iPhone guarda el pass. Mientras la Etapa 3 no exista, los sellos de prueba se cargan con `npm run e2e` o por script.
+>
+> **Cuenta de Apple:** para el prototipo se usa la cuenta de developer del jefe de Martín (Martín invitado con rol Admin a su Apple ID personal, o el jefe le pasa el `.p12` + Team ID). **No sirve para el piloto real**: los passes quedan atados para siempre al equipo que los firma, y no se migran. Antes de poner clientes reales, Martín abre su propia cuenta (USD 99/año) y se cambian `APPLE_TEAM_ID` / `APPLE_PASS_TYPE_ID` + certificados. El código no depende de qué cuenta sea.
+
 **Objetivo:** paridad para iPhone: `.pkpass` desde la landing, y actualización automática del pass vía APNs + PassKit Web Service.
 
 ### Tarea 4.1 — ⚠️ TAREA HUMANA: Apple Developer + certificados
