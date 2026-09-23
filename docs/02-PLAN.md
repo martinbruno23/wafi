@@ -66,7 +66,7 @@
 
 - El deploy se hizo por la **web de Vercel** (Import de GitHub) en vez de por CLI — quedó documentado como alternativa válida a los pasos originales de esta tarea.
 - Se creó el repo `github.com/martinbruno23/wafi` (privado) y se pusheó `main` con `git remote add origin` + `git push -u origin main`.
-- Pendiente de confirmar: cargar `NEXT_PUBLIC_APP_URL=https://wafi-iota.vercel.app` en Vercel (Settings → Environment Variables) y hacer Redeploy — sin esto, la env var sigue apuntando a `localhost:3000` en producción.
+- ✅ `NEXT_PUBLIC_APP_URL` confirmada (2026-09-23): el pass emitido por producción trae el link `https://wafi-iota.vercel.app/mi`.
 
 ---
 
@@ -241,10 +241,12 @@
 
 ### Tarea 2.4 — Prueba end-to-end real
 
-- [ ] Deploy a Vercel prod.
+- [x] Deploy a Vercel prod (2026-09-23): credenciales de Google cargadas en Vercel (production + preview) y redeploy. Producción emite el `saveUrl`; el pass creado desde prod quedó verificado leyéndolo de la API de Google (0 de 5 sellos, logo, color, QR, link a /mi, clase `approved`).
 - [ ] ⚠️ TAREA HUMANA: con un Android real: abrir `/{URL}/j/cafe-prueba`, enrolarse, verificar el pass en Google Wallet (color, logo, "0 / 5", QR visible).
 - [ ] Ejecutar un sello (SQL editor: `select apply_stamp('<card-id>', null);` + llamar `notifyWallets` vía un endpoint temporal de test o esperando a Etapa 3) y verificar que el pass muestra "1 / 5".
 - [ ] Commit de ajustes que hayan surgido: `fix: google wallet e2e adjustments`
+
+> **Notas (2026-09-23):** el proyecto de Supabase se había pausado por inactividad (plan free, ~2 meses sin uso) y hubo que restaurarlo desde el dashboard; datos intactos. Martín usa iPhone: la prueba en Android real queda pendiente de conseguir un equipo. El issuer de Google sigue en **modo demo** (solo cuentas de prueba pueden guardar el pass) hasta pedir acceso de publicación — obligatorio antes de cualquier piloto con clientes reales. Ojo: `reviewStatus: approved` de la *clase* no es lo mismo que la publicación del *issuer*.
 
 **Definición de terminado Etapa 2:** pass real en un Android, creado desde la landing con branding del merchant demo, que se actualiza al sellar.
 

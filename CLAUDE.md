@@ -21,10 +21,12 @@ WAFI es una plataforma de fidelización para cafés de especialidad. **No hay ap
 
 ## Estado actual
 
+> Supabase está en plan **free**: se pausa tras 7 días sin actividad y el DNS del proyecto deja de resolver. Si la API devuelve `fetch failed` / `DB_ERROR`, lo primero es chequear eso y pedirle a Martín que lo restaure desde el dashboard.
+
 - [x] Spec y plan documentados (2026-07-13)
-- [x] Etapa 0 — Setup del proyecto (deploy en `https://wafi-iota.vercel.app/`, repo en `github.com/martinbruno23/wafi`; pendiente confirmar `NEXT_PUBLIC_APP_URL` en Vercel — ver notas en el plan)
+- [x] Etapa 0 — Setup del proyecto (deploy en `https://wafi-iota.vercel.app/`, repo en `github.com/martinbruno23/wafi`)
 - [x] Etapa 1 — Core de dominio (schema + RLS + RPCs aplicados; 5 endpoints; 21 unit tests + E2E `npm run e2e` en verde)
-- [ ] Etapa 2 — Enrolamiento + Google Wallet
+- [~] Etapa 2 — Enrolamiento + Google Wallet (todo andando en producción y verificado contra la API de Google; falta probar en un Android real y pedir la publicación del issuer)
 - [ ] Etapa 3 — Dashboard + Scanner
 - [ ] Etapa 4 — Apple Wallet
 - [ ] Etapa 5 — Landing del cliente + piloto
