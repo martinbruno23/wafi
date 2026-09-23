@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { enrollCustomer, EnrollmentError } from "@/lib/services/enrollment";
 import { issueGooglePass } from "@/lib/services/pass-issuance";
+import { applePassUrlFor } from "@/lib/services/apple-pass";
 import { handleRoute, HttpError } from "@/lib/api/response";
 import { clientIp, enforceRateLimit } from "@/lib/api/rate-limit";
 
@@ -15,8 +16,8 @@ const bodySchema = z.object({
  * POST /api/enroll — público. Alta del cliente en un comercio (SPEC §5.2).
  * El email no se verifica acá: eso pasaría recién al entrar a /mi.
  *
- * Los links de wallet (google.saveUrl / apple.pkpassUrl) se agregan en las
- * Etapas 2 y 4; por ahora devuelve la card creada.
+ * Devuelve la card y, si la wallet está configurada, el link para guardarla:
+ * `google.saveUrl` (Google Wallet) y `apple.pkpassUrl` (Apple Wallet).
  */
 export async function POST(request: Request) {
   return handleRoute(async () => {
@@ -36,14 +37,19 @@ export async function POST(request: Request) {
     try {
       const { card, merchant, existing } = await enrollCustomer(merchantSlug, email);
 
-      // El pass de Google se emite siempre que se pueda: el cliente puede
-      // estar en Android o volver a agregarlo desde otro dispositivo.
-      const saveUrl = await issueGooglePass(card, merchant, email);
+      // Los dos passes se ofrecen siempre que se pueda: el cliente puede
+      // cambiar de teléfono o agregarla desde otro dispositivo. Son
+      // independientes: si uno falla, el otro sigue.
+      const [saveUrl, pkpassUrl] = await Promise.all([
+        issueGooglePass(card, merchant, email),
+        applePassUrlFor(card.id),
+      ]);
 
       return NextResponse.json({
         cardId: card.id,
         existing,
         ...(saveUrl ? { google: { saveUrl } } : {}),
+        ...(pkpassUrl ? { apple: { pkpassUrl } } : {}),
       });
     } catch (error) {
       if (error instanceof EnrollmentError) {

@@ -305,75 +305,41 @@
 
 **Objetivo:** paridad para iPhone: `.pkpass` desde la landing, y actualización automática del pass vía APNs + PassKit Web Service.
 
-### Tarea 4.1 — ⚠️ TAREA HUMANA: Apple Developer + certificados
+### Tarea 4.1 — ⚠️ TAREA HUMANA: cuenta de Apple + certificado
 
-- [ ] Inscribirse en Apple Developer Program (USD 99/año).
-- [ ] En el portal: Identifiers → crear **Pass Type ID** `pass.app.wafi.card`.
-- [ ] Crear certificado para ese Pass Type ID (CSR desde Keychain) → descargar `.cer` → exportar como `.p12` con password.
-- [ ] Descargar el certificado intermedio **WWDR G4** de Apple.
-- [ ] Convertir y cargar como env vars (local + Vercel):
+- [ ] Acceso a una cuenta de Apple Developer. **Prototipo:** la del jefe de Martín (invitación con rol Admin a su Apple ID personal). **Piloto real:** cuenta propia (USD 99/año) — ver nota al inicio de la etapa.
+- [ ] En developer.apple.com → Certificates, IDs & Profiles → Identifiers → crear **Pass Type ID** `pass.app.wafi.card`.
+- [ ] Crear el certificado de ese Pass Type ID (CSR desde Acceso a Llaveros) → descargar `.cer` → doble clic para importarlo → en Acceso a Llaveros exportarlo como `.p12` con contraseña.
+- [ ] Anotar el **Team ID** (developer.apple.com → Membership, 10 caracteres).
+- [ ] Cargar todo con **un comando** (pide la contraseña del `.p12` en la terminal, verifica cert y clave, actualiza `.env.local` y opcionalmente Vercel):
   ```bash
-  # PEM del cert y la key desde el .p12:
-  openssl pkcs12 -in pass.p12 -clcerts -nokeys -out signerCert.pem -legacy
-  openssl pkcs12 -in pass.p12 -nocerts -out signerKey.pem -legacy   # con passphrase
-  base64 -i signerCert.pem | pbcopy   # → APPLE_PASS_CERT_B64
-  base64 -i signerKey.pem | pbcopy    # → APPLE_PASS_KEY_B64  (+ APPLE_PASS_KEY_PASSPHRASE)
-  base64 -i wwdr.pem | pbcopy         # → APPLE_WWDR_CERT_B64
+  bash scripts/load-apple-cert.sh ~/Downloads/<archivo>.p12 <TEAM_ID>
   ```
-  Más: `APPLE_TEAM_ID`, `APPLE_PASS_TYPE_ID=pass.app.wafi.card`.
+  El certificado intermedio **WWDR G4 ya viene en el código** (`src/lib/wallet/apple/wwdr.ts`, es público); no hace falta descargarlo. Variables resultantes: `APPLE_TEAM_ID`, `APPLE_PASS_TYPE_ID`, `APPLE_PASS_CERT_B64`, `APPLE_PASS_KEY_B64` (la clave se guarda sin contraseña).
+- [ ] Verificar la firma real: `npm run check:pkpass -- ~/Desktop/wafi-prueba.pkpass` y abrir ese archivo desde el iPhone (AirDrop o Mail): tiene que ofrecer "Agregar".
 
-### Tarea 4.2 — Generación del .pkpass
+### Tarea 4.2 — Generación del .pkpass ✅ (2026-09-23, con certificado autofirmado)
 
-- [ ] `npm i passkit-generator`. Crear assets del template en `src/lib/wallet/apple-assets/` (`icon.png` 29×29·58·87, `logo.png` ~160×50 — wordmark WAFI blanco/negro según contraste).
-- [ ] Crear `src/lib/wallet/apple.ts`:
-  ```ts
-  export async function buildPkpass(card, merchant, customer): Promise<Buffer>
-  // PKPass.from({ model: assetsDir, certificates: {
-  //   wwdr: b64decode(WWDR), signerCert: b64decode(CERT),
-  //   signerKey: b64decode(KEY), signerKeyPassphrase } },
-  // {
-  //   formatVersion: 1, passTypeIdentifier: APPLE_PASS_TYPE_ID,
-  //   teamIdentifier: APPLE_TEAM_ID, serialNumber: card.id,
-  //   organizationName: 'WAFI', description: `Tarjeta ${merchant.name}`,
-  //   webServiceURL: `${APP_URL}/api/apple-wallet`, authenticationToken: card.appleAuthToken,
-  //   backgroundColor: merchant.brandColor (→ rgb()), foregroundColor/labelColor por contraste,
-  //   locations: merchant.lat ? [{ latitude, longitude, relevantText: `Sumá un sello en ${merchant.name} ☕` }] : [],
-  // })
-  // pass.type = 'storeCard'
-  // headerFields: [{ key: 'stamps', label: 'SELLOS', value: `${current}/${required}` }]
-  // primaryFields:  [{ key: 'progress', label: hasPrize ? '🎉 PREMIO DISPONIBLE' : 'Tu progreso',
-  //                    value: hasPrize ? merchant.prizeDescription : `${current} de ${required} sellos` }]
-  // secondaryFields: [{ key: 'prize', label: 'PREMIO', value: merchant.prizeDescription }]
-  // backFields: link a /mi + '¿Cómo funciona?' + contacto
-  // pass.setBarcodes({ format: 'PKBarcodeFormatQR', message: card.qrToken, messageEncoding: 'iso-8859-1' })
-  ```
-- [ ] Endpoint de descarga `src/app/api/passes/apple/[cardId]/route.ts`: valida query `?t=` contra `apple_auth_token`, responde el buffer con `Content-Type: application/vnd.apple.pkpass` y `Content-Disposition: attachment; filename="wafi.pkpass"`.
-- [ ] Integrar en `/api/enroll` (`platform === 'apple'`) → responder `apple.pkpassUrl`. Actualizar la landing `/j/[slug]`: en iOS el botón pasa a "Agregar a Apple Wallet" → navega al pkpassUrl (Safari abre el sheet nativo).
-- [ ] Verificar: descargar el .pkpass, validarlo (abrir en un iPhone o con un validador); el pass se agrega y muestra QR + campos.
-- [ ] Commit: `feat: apple wallet pkpass generation`
+- [x] `passkit-generator` 3.6 (constructor con buffers en memoria: no lee archivos del disco en Vercel). Assets generados por `scripts/make-apple-assets.mts` y embebidos en `src/lib/wallet/apple/assets.generated.ts`: ícono 29/58/87 px y logo "W" en dos variantes (clara/oscura) según el contraste con el `brand_color`.
+- [x] `src/lib/wallet/apple/pass-content.ts` — **puro y testeado** (15 tests): arma el `pass.json` (`storeCard`): colores del café, QR con `qr_token`, header "SELLOS 3/5", primary "TU PROGRESO" o "🎉 PREMIO DISPONIBLE", premios canjeados, reverso con link a `/mi`, `locations` si el café tiene lat/lng, `sharingProhibited`, y `webServiceURL` **solo si la URL es HTTPS** (iOS no acepta http).
+- [x] **Notificaciones en el lockscreen** vía `changeMessage` del campo de sellos: "☕ Nuevo sello en X: 3/5", "🎉 ¡Completaste tu tarjeta en X!", "🎁 Canjeaste tu premio en X" según el último movimiento (`stamp_events`).
+- [x] `src/lib/wallet/apple/pkpass.ts` — firma y empaqueta. `src/lib/services/apple-pass.ts` — carga datos de la tarjeta y arma el link con token.
+- [x] `GET /api/passes/apple/[cardId]?t=` — descarga con `Content-Type: application/vnd.apple.pkpass`; token comparado en tiempo constante; 404 idéntico para "no existe" y "token incorrecto".
+- [x] `/api/enroll` devuelve `apple.pkpassUrl`; la landing en iPhone redirige al `.pkpass` (alta nueva) o muestra "Volver a agregarla a Apple Wallet" (ya existente). De paso se corrigió que, con tarjeta existente, redirigía directo en vez de avisar "Ya tenés esta tarjeta".
+- [x] Verificado con `npm run check:pkpass`: estructura, hashes del `manifest.json`, firma PKCS#7 válida sobre el manifest e intermedio WWDR G4 incluido. **Falta:** firmar con el certificado real y abrirlo en un iPhone (Tarea 4.1).
 
-### Tarea 4.3 — PassKit Web Service
+### Tarea 4.3 — PassKit Web Service ✅ (2026-09-23)
 
-- [ ] Crear los route handlers bajo `src/app/api/apple-wallet/v1/` implementando el contrato del SPEC §7 (rutas y semántica fijadas por Apple):
-  - `devices/[deviceId]/registrations/[passTypeId]/[serial]/route.ts` → POST (auth `ApplePass` token vs card; upsert en `apple_registrations` con `pushToken` del body; 201 nuevo / 200 existente) y DELETE (marca `active=false`; 200).
-  - `devices/[deviceId]/registrations/[passTypeId]/route.ts` → GET: serials de cards con `apple_updated_at > passesUpdatedSince` registradas a ese device; responde `{ serialNumbers, lastUpdated: <max apple_updated_at en epoch string> }`; 204 si no hay cambios.
-  - `passes/[passTypeId]/[serial]/route.ts` → GET (auth token): regenera y devuelve el `.pkpass` actual con header `Last-Modified`.
-  - `log/route.ts` → POST: `console.error('[apple-wallet]', body.logs)`; 200.
-- [ ] Todos con auth estricta del header `Authorization: ApplePass {token}` (comparar contra `cards.apple_auth_token` del serial) salvo `/log`.
-- [ ] Commit: `feat: passkit web service endpoints`
+- [x] Rutas bajo `src/app/api/apple-wallet/v1/` con el contrato de Apple: registro `POST` (201/200/401) y baja `DELETE` de dispositivos, listado de passes cambiados `GET ?passesUpdatedSince` (200/204), descarga del pass actualizado `GET` (200/304/401) y `POST /log`.
+- [x] Lógica pura en `src/lib/wallet/apple/web-service.ts` (10 tests): header `ApplePass`, serial UUID, tag `lastUpdated` en ms epoch, `If-Modified-Since` a precisión de segundos. Servicio en `src/lib/services/apple-registrations.ts`.
+- [x] Seguridad: token de la tarjeta en tiempo constante; serial desconocido → 401 (no revela qué tarjetas existen); Pass Type ID ajeno → 404. Borrar el pass desactiva la registración pero **no** borra la tarjeta (SPEC §5.5).
 
-### Tarea 4.4 — Push APNs + cierre E2E
+### Tarea 4.4 — Push APNs ✅ código / ⏳ prueba real
 
-- [ ] Crear `src/lib/wallet/apns.ts`: cliente HTTP/2 (`node:http2`) contra `https://api.push.apple.com` con mTLS usando el **mismo cert/key del Pass Type ID**:
-  ```ts
-  export async function pushPassUpdate(pushToken: string): Promise<void>
-  // http2.connect('https://api.push.apple.com', { cert, key, passphrase })
-  // POST `/3/device/${pushToken}` · headers: { 'apns-topic': APPLE_PASS_TYPE_ID } · body: '{}'
-  // 200 = ok · 410 (Unregistered) → marcar registration active=false
-  ```
-- [ ] Completar `notifyWallets(card)`: además de Google, buscar `apple_registrations` activas de la card y pushear a cada una (en paralelo, errores solo logueados).
-- [ ] Deploy. ⚠️ TAREA HUMANA: E2E con iPhone real: enrolar desde `/j/cafe-prueba` → pass en Apple Wallet → sellar desde el Scanner → **el pass se actualiza solo** (verificar también la notificación de cambio en lockscreen) → canje → pass vuelve a 0.
-- [ ] Commit: `feat: apns push and apple e2e`
+- [x] `src/lib/wallet/apple/apns.ts`: HTTP/2 a `api.push.apple.com` con mTLS usando el certificado del Pass Type ID; payload `{}`, `apns-topic` = Pass Type ID; una sola conexión para todos los dispositivos. `410` o token inválido → la registración se desactiva (3 tests).
+- [x] `notifyWallets` avisa a Google y a Apple **en paralelo e independientes**; nunca tumba un sello.
+- [x] **Simulación del iPhone** (`npm run e2e:apple`, con dev server y APPLE_* configurado): alta → descarga → registro → sello → "¿qué cambió?" → baja el pass en 1/5 con la notificación → 304 → borrado. **20 chequeos en verde.** Con cert autofirmado, APNs rechaza la conexión (`unknown ca`), lo que confirma que el push se intenta; el sello se registra igual.
+- [ ] ⚠️ TAREA HUMANA: con el certificado real, en un iPhone: agregar desde `https://wafi-iota.vercel.app/j/cafe-prueba` → sellar (`npm run e2e` o script) → **el pass se actualiza solo y llega la notificación al lockscreen**.
 
 **Definición de terminado Etapa 4:** mismo loop de la Etapa 3 funcionando en iPhone, con actualización automática del pass.
 

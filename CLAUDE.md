@@ -15,7 +15,7 @@ WAFI es una plataforma de fidelización para cafés de especialidad. **No hay ap
 - **El backend es la única fuente de verdad** del estado de las tarjetas. Los passes de wallet son proyecciones de solo lectura que se actualizan por push.
 - **Los sellos solo los escribe el servidor**, siempre iniciados por un comercio autenticado que escaneó el QR del cliente. Nunca exponer un endpoint que permita al cliente auto-sellarse.
 - **Migraciones**: los `.sql` de `supabase/migrations/` son la fuente de verdad, pero se aplican **pegándolos en el SQL Editor de Supabase** (no con `supabase db push`, que exige login interactivo del CLI + contraseña de la base). Al crear una migración nueva, avisarle a Martín para que la corra y **verificar después con una consulta real** que quedó aplicada — un `select` con `head: true` da falsos positivos.
-- **Verificación**: `npm test` (unit) y, con `npm run dev` levantado, `npm run e2e` (flujo real contra la API: scan → sellar → canjear + casos de rechazo). Correr ambos antes de cerrar una tarea.
+- **Verificación**: `npm test` (unit) y, con `npm run dev` levantado, `npm run e2e` (flujo real contra la API: scan → sellar → canjear + casos de rechazo). Correr ambos antes de cerrar una tarea. Apple: `npm run check:pkpass` (firma del .pkpass) y `npm run e2e:apple` (simula el iPhone contra el web service; requiere APPLE_* configurado — para probar sin el cert real, generar uno autofirmado en un `.env.development.local` temporal y borrarlo al terminar).
 - Al completar una tarea del plan, marcar su checkbox `- [x]` en `docs/02-PLAN.md` y commitear.
 - Las tareas marcadas **⚠️ TAREA HUMANA** requieren acción de Martín (cuentas, certificados, pagos). Si una está pendiente y bloquea, avisarle y avanzar con lo no bloqueado.
 
@@ -27,7 +27,7 @@ WAFI es una plataforma de fidelización para cafés de especialidad. **No hay ap
 - [x] Etapa 0 — Setup del proyecto (deploy en `https://wafi-iota.vercel.app/`, repo en `github.com/martinbruno23/wafi`)
 - [x] Etapa 1 — Core de dominio (schema + RLS + RPCs aplicados; 5 endpoints; 21 unit tests + E2E `npm run e2e` en verde)
 - [~] Etapa 2 — Enrolamiento + Google Wallet (todo andando en producción y verificado contra la API de Google; falta probar en un Android real y pedir la publicación del issuer)
-- [ ] Etapa 4 — Apple Wallet ← **en curso, va antes que la 3**
+- [~] Etapa 4 — Apple Wallet ← **va antes que la 3.** Código completo y verificado con cert autofirmado (53 tests, `e2e:apple` 20/20). Falta el certificado real (`bash scripts/load-apple-cert.sh`) y probar en un iPhone.
 - [ ] Etapa 3 — Dashboard + Scanner
 - [ ] Etapa 5 — Landing del cliente + piloto
 

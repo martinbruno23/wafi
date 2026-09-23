@@ -16,7 +16,7 @@ type Phase =
   | { name: "form" }
   | { name: "submitting" }
   | { name: "redirecting" }
-  | { name: "done"; existing: boolean; saveUrl?: string }
+  | { name: "done"; existing: boolean; walletUrl?: string }
   | { name: "qr"; dataUrl: string; existing: boolean }
   | { name: "error"; message: string };
 
@@ -30,6 +30,7 @@ type Props = {
 };
 
 export function EnrollForm({ merchantSlug, platform, brand, brandFg }: Props) {
+  const walletName = platform === "apple" ? "Apple Wallet" : "Google Wallet";
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>({ name: "form" });
@@ -72,10 +73,19 @@ export function EnrollForm({ merchantSlug, platform, brand, brandFg }: Props) {
       return;
     }
 
-    // Android con save link listo → directo al sheet de Google Wallet.
-    if (platform === "google" && body.google?.saveUrl) {
+    // Link de la wallet del teléfono: Google en Android, el .pkpass en iPhone
+    // (Safari lo abre con el sheet nativo "Agregar a Apple Wallet").
+    const walletUrl =
+      platform === "google"
+        ? body.google?.saveUrl
+        : platform === "apple"
+          ? body.apple?.pkpassUrl
+          : undefined;
+
+    // Alta nueva con wallet lista → directo a agregarla, sin un paso más.
+    if (walletUrl && !body.existing) {
       setPhase({ name: "redirecting" });
-      window.location.href = body.google.saveUrl;
+      window.location.href = walletUrl;
       return;
     }
 
@@ -92,12 +102,9 @@ export function EnrollForm({ merchantSlug, platform, brand, brandFg }: Props) {
       return;
     }
 
-    // iPhone (hasta Etapa 4) o Android sin saveUrl todavía (hasta Tarea 2.2).
-    setPhase({
-      name: "done",
-      existing: body.existing,
-      saveUrl: body.google?.saveUrl,
-    });
+    // Ya tenía la tarjeta (botón para re-agregarla), o la wallet de su
+    // teléfono todavía no está configurada (la tarjeta queda creada igual).
+    setPhase({ name: "done", existing: body.existing, walletUrl });
   }
 
   if (phase.name === "redirecting") {
@@ -106,7 +113,7 @@ export function EnrollForm({ merchantSlug, platform, brand, brandFg }: Props) {
         className="text-center text-[15px] text-muted-foreground"
         role="status"
       >
-        Abriendo Google Wallet…
+        Abriendo {walletName}…
       </p>
     );
   }
@@ -144,21 +151,20 @@ export function EnrollForm({ merchantSlug, platform, brand, brandFg }: Props) {
             ? "Ya tenés esta tarjeta ☕"
             : "¡Listo! Tu tarjeta quedó creada 🎉"}
         </h2>
-        {phase.saveUrl ? (
+        {phase.walletUrl ? (
           <a
-            href={phase.saveUrl}
+            href={phase.walletUrl}
             className="w-full rounded-[14px] px-5 py-3.5 text-center text-[15px] font-semibold"
             style={{ background: brand, color: brandFg }}
           >
             {phase.existing
-              ? "Volver a agregarla a mi Wallet"
-              : "Agregar a mi Wallet"}
+              ? `Volver a agregarla a ${walletName}`
+              : `Agregar a ${walletName}`}
           </a>
         ) : (
           <p className="max-w-[280px] text-[15px] text-muted-foreground">
-            {platform === "apple"
-              ? "Apple Wallet llega muy pronto — te avisamos por email. Tu progreso ya cuenta desde hoy."
-              : "Google Wallet se habilita en unos días — te avisamos por email. Tu progreso ya cuenta desde hoy."}
+            {walletName} llega muy pronto — te avisamos por email. Tu progreso
+            ya cuenta desde hoy.
           </p>
         )}
       </section>
