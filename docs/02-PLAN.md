@@ -307,17 +307,19 @@
 
 ### Tarea 4.1 — ⚠️ TAREA HUMANA: cuenta de Apple + certificado
 
-- [ ] Acceso a una cuenta de Apple Developer. **Prototipo:** la del jefe de Martín (cuenta Individual: él emite el certificado a partir del CSR de Martín, ver abajo). **Piloto real:** cuenta propia (USD 99/año) — ver nota al inicio de la etapa.
-- [ ] **Pedido de certificado (CSR), sin Acceso a Llaveros:** `bash scripts/apple-cert.sh csr`. Genera la clave privada en `~/.wafi/apple/pass-type-id.key` (fuera del repo, permisos 600 — **hacer backup en un gestor de contraseñas**) y el pedido `~/.wafi/apple/wafi-pass.certSigningRequest`, que es público.
-- [ ] Quien administre la cuenta: developer.apple.com → Certificates, IDs & Profiles → Identifiers → **+** → **Pass Type IDs** → `pass.app.wafi.card` → en ese identificador, **Create Certificate** → subir el `.certSigningRequest` → descargar el `.cer`. Anotar el **Team ID** (Membership details, 10 caracteres).
+- [x] Acceso a una cuenta de Apple Developer. **Prototipo:** la del jefe de Martín (cuenta Individual: él emite el certificado a partir del CSR de Martín, ver abajo). **Piloto real:** cuenta propia (USD 99/año) — ver nota al inicio de la etapa.
+- [x] **Pedido de certificado (CSR), sin Acceso a Llaveros:** `bash scripts/apple-cert.sh csr`. Genera la clave privada en `~/.wafi/apple/pass-type-id.key` (fuera del repo, permisos 600 — **hacer backup en un gestor de contraseñas**) y el pedido `~/.wafi/apple/wafi-pass.certSigningRequest`, que es público.
+- [x] Quien administre la cuenta: developer.apple.com → Certificates, IDs & Profiles → Identifiers → **+** → **Pass Type IDs** → `pass.app.wafi.card` → en ese identificador, **Create Certificate** → subir el `.certSigningRequest` → descargar el `.cer`. Anotar el **Team ID** (Membership details, 10 caracteres).
   > La cuenta del jefe resultó ser **Individual**: esas cuentas no pueden sumar miembros al portal de developer (la invitación solo da acceso a App Store Connect). Por eso el certificado lo emite él con el CSR de Martín. La clave privada nunca sale de la Mac de Martín.
-- [ ] Cargar todo con un comando (verifica que el `.cer` sea del Pass Type ID y que empareje con la clave; actualiza `.env.local` y opcionalmente Vercel):
+- [x] Cargar todo con un comando (verifica que el `.cer` sea del Pass Type ID y que empareje con la clave; actualiza `.env.local` y opcionalmente Vercel):
   ```bash
   bash scripts/apple-cert.sh load ~/Downloads/pass.cer <TEAM_ID>
   ```
   También acepta un `.p12` exportado de Llaveros (pide la contraseña en la terminal).
   El certificado intermedio **WWDR G4 ya viene en el código** (`src/lib/wallet/apple/wwdr.ts`, es público); no hace falta descargarlo. Variables resultantes: `APPLE_TEAM_ID`, `APPLE_PASS_TYPE_ID`, `APPLE_PASS_CERT_B64`, `APPLE_PASS_KEY_B64` (la clave se guarda sin contraseña).
-- [ ] Verificar la firma real: `npm run check:pkpass -- ~/Desktop/wafi-prueba.pkpass` y abrir ese archivo desde el iPhone (AirDrop o Mail): tiene que ofrecer "Agregar".
+- [x] Verificar la firma real: `npm run check:pkpass -- ~/Desktop/wafi-prueba.pkpass` y abrir ese archivo desde el iPhone (AirDrop o Mail): tiene que ofrecer "Agregar".
+
+> **Hecho (2026-09-28):** el jefe emitió el `.cer` (cuenta Individual, Team ID `FY6U7CMHJV`, vence 2027-10-28) a partir del CSR de Martín. La firma del `.pkpass` valida la cadena completa hasta **Apple Root CA** (`openssl smime -verify` con la raíz de Apple).
 
 ### Tarea 4.2 — Generación del .pkpass ✅ (2026-09-23, con certificado autofirmado)
 
@@ -340,7 +342,11 @@
 - [x] `src/lib/wallet/apple/apns.ts`: HTTP/2 a `api.push.apple.com` con mTLS usando el certificado del Pass Type ID; payload `{}`, `apns-topic` = Pass Type ID; una sola conexión para todos los dispositivos. `410` o token inválido → la registración se desactiva (3 tests).
 - [x] `notifyWallets` avisa a Google y a Apple **en paralelo e independientes**; nunca tumba un sello.
 - [x] **Simulación del iPhone** (`npm run e2e:apple`, con dev server y APPLE_* configurado): alta → descarga → registro → sello → "¿qué cambió?" → baja el pass en 1/5 con la notificación → 304 → borrado. **20 chequeos en verde.** Con cert autofirmado, APNs rechaza la conexión (`unknown ca`), lo que confirma que el push se intenta; el sello se registra igual.
-- [ ] ⚠️ TAREA HUMANA: con el certificado real, en un iPhone: agregar desde `https://wafi-iota.vercel.app/j/cafe-prueba` → sellar (`npm run e2e` o script) → **el pass se actualiza solo y llega la notificación al lockscreen**.
+- [x] **Probado en un iPhone real (2026-09-28)** con la tarjeta de Batata (`/j/batata-demo`): el pass se agrega, el iPhone se registra en el web service, y tras un sello desde producción el iPhone pide los cambios **2 segundos después** y baja el pass en 1/5 sin tocar nada (verificado en los logs de Vercel: POST stamp → GET registrations → GET passes).
+- [ ] ⏳ **La notificación en la pantalla de bloqueo no apareció**, aunque el pass se actualizó. Pendiente de diagnosticar (¿notificaciones del pase activadas en iOS? ¿changeMessage en headerFields?).
+- [ ] Logo del comercio en el pass de Apple: hoy sale la W de WAFI (el logo va embebido en el `.pkpass`). En Google ya usa el del comercio.
+
+> **Performance (2026-09-28):** el alta desde iPhone tardaba 2,5–4 s. Causas: (1) se esperaba a Google Wallet aunque el cliente usara iPhone → ahora se emite con `after()`; (2) la LoyaltyClass se re-actualizaba en cada alta → ahora se crea una vez y los cambios de marca se empujan con `npm run wallet:sync-classes`; (3) las funciones corrían en `iad1` (EE.UU.) con la base en São Paulo → `vercel.json` con `regions: ["gru1"]`. Resultado: **~0,3 s**.
 
 **Definición de terminado Etapa 4:** mismo loop de la Etapa 3 funcionando en iPhone, con actualización automática del pass.
 
