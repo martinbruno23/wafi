@@ -136,8 +136,9 @@ async function main() {
   const updated = p1.status === 200 ? passJsonFrom(await p1.arrayBuffer()) : null;
   const header = updated?.storeCard.headerFields[0];
   check("baja el pass actualizado a 1/5", header?.value === "1/5", header?.value);
-  const primary = updated?.storeCard.primaryFields[0];
-  check("con la notificación de nuevo sello", /Nuevo sello en Café de Prueba/.test(primary?.changeMessage ?? ""), primary?.changeMessage);
+  const remaining = updated?.storeCard.secondaryFields.find((f: { key: string }) => f.key === "remaining");
+  check("con la notificación de nuevo sello", /Nuevo sello en Café de Prueba: te faltan/.test(remaining?.changeMessage ?? ""), remaining?.changeMessage);
+  check("dice cuántos sellos faltan", remaining?.value === "4 sellos", remaining?.value);
 
   const p2 = await fetch(passUrl, { headers: { ...auth, "if-modified-since": p1.headers.get("last-modified")! } });
   check("si ya lo tiene → 304", p2.status === 304, `status ${p2.status}`);

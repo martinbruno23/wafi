@@ -5,18 +5,43 @@
 
 export type StampBox = { x: number; y: number; w: number; h: number };
 
-/** Filas según la cantidad de sellos: hasta 6 en una, hasta 12 en dos. */
-export function rowsFor(count: number): number {
-  if (count <= 6) return 1;
-  if (count <= 12) return 2;
-  return Math.ceil(count / 10);
+const PAD_X = 0.06;
+const PAD_Y = 0.14;
+const FILL = 0.84; // el sello ocupa el 84% de su celda
+const MAX_ROWS = 4;
+
+/** Tamaño de cada sello si se reparten en `rows` filas. */
+function stampSize(count: number, rows: number, width: number, height: number, aspect: number) {
+  const perRow = Math.ceil(count / rows);
+  const cellW = (width * (1 - 2 * PAD_X)) / perRow;
+  const cellH = (height * (1 - 2 * PAD_Y)) / rows;
+  const w = Math.min(cellW * FILL, cellH * FILL * aspect);
+  return { perRow, cellW, cellH, w, h: w / aspect };
+}
+
+/**
+ * Cuántas filas usar: las que hacen los sellos más grandes para su forma.
+ * Un círculo rinde en una fila; una silueta apaisada (una batata) rinde en
+ * dos o tres, porque en una sola queda chica y sobra alto.
+ */
+export function bestRows(count: number, width: number, height: number, aspect = 1): number {
+  let best = 1;
+  let bestArea = 0;
+  for (let rows = 1; rows <= Math.min(MAX_ROWS, count); rows++) {
+    const { w, h } = stampSize(count, rows, width, height, aspect);
+    if (w * h > bestArea * 1.0001) {
+      best = rows;
+      bestArea = w * h;
+    }
+  }
+  return best;
 }
 
 /**
  * Cajas de cada sello dentro de una imagen de `width` × `height`.
  * `aspect` es ancho/alto del sello (1 para un círculo; una batata es ~2,5).
- * Cada sello entra en su celda respetando su forma; la última fila, si queda
- * incompleta, se centra.
+ * Elige las filas que hacen los sellos más grandes; cada sello entra en su
+ * celda respetando su forma, y la última fila, si queda incompleta, se centra.
  */
 export function stampLayout(
   count: number,
@@ -26,18 +51,10 @@ export function stampLayout(
 ): StampBox[] {
   if (count <= 0) return [];
 
-  const rows = rowsFor(count);
-  const perRow = Math.ceil(count / rows);
-  const padX = width * 0.06;
-  const padY = height * 0.14;
-  const cellW = (width - 2 * padX) / perRow;
-  const cellH = (height - 2 * padY) / rows;
-
-  // El sello ocupa el 84% de su celda, sin deformarse.
-  const maxW = cellW * 0.84;
-  const maxH = cellH * 0.84;
-  const w = Math.min(maxW, maxH * aspect);
-  const h = w / aspect;
+  const rows = bestRows(count, width, height, aspect);
+  const { perRow, cellW, cellH, w, h } = stampSize(count, rows, width, height, aspect);
+  const padX = width * PAD_X;
+  const padY = height * PAD_Y;
 
   const boxes: StampBox[] = [];
   for (let r = 0; r < rows; r++) {

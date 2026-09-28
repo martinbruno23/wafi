@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rowsFor, stampLayout, type StampBox } from "./strip-layout";
+import { bestRows, stampLayout, type StampBox } from "./strip-layout";
 
 const W = 1125; // strip @3x de Apple
 const H = 369;
@@ -7,13 +7,36 @@ const H = 369;
 const overlaps = (a: StampBox, b: StampBox) =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
-describe("rowsFor", () => {
-  it("una fila hasta 6, dos hasta 12, más para tarjetas largas", () => {
-    expect(rowsFor(5)).toBe(1);
-    expect(rowsFor(6)).toBe(1);
-    expect(rowsFor(7)).toBe(2);
-    expect(rowsFor(12)).toBe(2);
-    expect(rowsFor(20)).toBe(2);
+describe("bestRows", () => {
+  it("círculos: una fila hasta 6, dos para más", () => {
+    expect(bestRows(5, W, H, 1)).toBe(1);
+    expect(bestRows(6, W, H, 1)).toBe(1);
+    expect(bestRows(8, W, H, 1)).toBe(2);
+  });
+
+  it("siluetas apaisadas (una batata) rinden en más filas", () => {
+    expect(bestRows(5, W, H, 2.5)).toBeGreaterThan(1);
+  });
+
+  it("elige las filas que dan el sello más grande", () => {
+    for (const count of [3, 5, 8, 10, 15, 20]) {
+      for (const aspect of [1, 2.5]) {
+        const chosen = stampLayout(count, W, H, aspect)[0];
+        for (let rows = 1; rows <= 4; rows++) {
+          // Ninguna otra cantidad de filas da sellos más grandes.
+          const perRow = Math.ceil(count / rows);
+          const cellW = (W * 0.88) / perRow;
+          const cellH = (H * 0.72) / rows;
+          const w = Math.min(cellW * 0.84, cellH * 0.84 * aspect);
+          expect(chosen.w).toBeGreaterThanOrEqual(Math.floor(w) - 1);
+        }
+      }
+    }
+  });
+
+  it("nunca más filas que sellos", () => {
+    expect(bestRows(1, W, H, 2.5)).toBe(1);
+    expect(bestRows(2, W, H, 2.5)).toBeLessThanOrEqual(2);
   });
 });
 
@@ -42,18 +65,20 @@ describe("stampLayout", () => {
   });
 
   it("una sola fila queda centrada en la franja", () => {
-    const boxes = stampLayout(5, W, H, 1);
+    const boxes = stampLayout(5, W, H, 1); // círculos: una fila
     const left = boxes[0].x;
     const right = W - (boxes[4].x + boxes[4].w);
     expect(Math.abs(left - right)).toBeLessThanOrEqual(2);
   });
 
   it("la última fila incompleta también se centra", () => {
-    const boxes = stampLayout(7, W, H, 1); // 4 arriba, 3 abajo
-    const bottom = boxes.slice(4);
-    const left = bottom[0].x;
-    const right = W - (bottom[2].x + bottom[2].w);
-    expect(Math.abs(left - right)).toBeLessThanOrEqual(2);
+    for (const [count, aspect, top] of [[9, 1, 5], [5, 2.5, 3]] as const) {
+      expect(bestRows(count, W, H, aspect)).toBe(2);
+      const bottom = stampLayout(count, W, H, aspect).slice(top);
+      const left = bottom[0].x;
+      const right = W - (bottom[bottom.length - 1].x + bottom[bottom.length - 1].w);
+      expect(Math.abs(left - right)).toBeLessThanOrEqual(2);
+    }
   });
 
   it("sin sellos no hay cajas", () => {
