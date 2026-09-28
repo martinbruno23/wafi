@@ -167,9 +167,10 @@ export function buildPassJson(input: PassContentInput): PassJson {
       : {}),
     storeCard: {
       headerFields: [{ key: "stamps", label: "SELLOS", value: `${current}/${required}` }],
-      // La notificación va en el campo principal: en un iPhone real
-      // (2026-09-28), con el changeMessage en headerFields el pass se
-      // actualizaba pero iOS no mostraba ninguna notificación.
+      // La notificación va en el campo principal: verificado en un iPhone
+      // real (2026-09-28). Si un cliente no la recibe, lo primero es su
+      // ajuste de iOS → Notificaciones → Wallet (el interruptor del pase no
+      // alcanza si el de la app está apagado); fue la causa en la prueba.
       primaryFields: [
         {
           key: "progress",
