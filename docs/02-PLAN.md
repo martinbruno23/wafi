@@ -301,20 +301,21 @@
 
 > **⚠️ Orden cambiado (decisión de Martín, 2026-09-23): esta etapa se ejecuta ANTES que la Etapa 3.** Motivos: (1) Martín usa iPhone y no tiene Android para probar; (2) el primer cliente previsto (Batata Cofi, café con 163 socios) ya carga los puntos solo desde FUDO, así que lo que le falta es la wallet, no el scanner; (3) la publicación del issuer de Google quedó trabada (el perfil pide datos que Martín como persona física no tiene), y Apple no tiene proceso de publicación: con la cuenta de developer, cualquier iPhone guarda el pass. Mientras la Etapa 3 no exista, los sellos de prueba se cargan con `npm run e2e` o por script.
 >
-> **Cuenta de Apple:** para el prototipo se usa la cuenta de developer del jefe de Martín (Martín invitado con rol Admin a su Apple ID personal, o el jefe le pasa el `.p12` + Team ID). **No sirve para el piloto real**: los passes quedan atados para siempre al equipo que los firma, y no se migran. Antes de poner clientes reales, Martín abre su propia cuenta (USD 99/año) y se cambian `APPLE_TEAM_ID` / `APPLE_PASS_TYPE_ID` + certificados. El código no depende de qué cuenta sea.
+> **Cuenta de Apple:** para el prototipo se usa la cuenta de developer del jefe de Martín. Es Individual, así que no puede sumarlo al portal: Martín genera el CSR (`bash scripts/apple-cert.sh csr`) y el jefe emite el certificado. **No sirve para el piloto real**: los passes quedan atados para siempre al equipo que los firma, y no se migran. Antes de poner clientes reales, Martín abre su propia cuenta (USD 99/año) y se cambian `APPLE_TEAM_ID` / `APPLE_PASS_TYPE_ID` + certificados. El código no depende de qué cuenta sea.
 
 **Objetivo:** paridad para iPhone: `.pkpass` desde la landing, y actualización automática del pass vía APNs + PassKit Web Service.
 
 ### Tarea 4.1 — ⚠️ TAREA HUMANA: cuenta de Apple + certificado
 
-- [ ] Acceso a una cuenta de Apple Developer. **Prototipo:** la del jefe de Martín (invitación con rol Admin a su Apple ID personal). **Piloto real:** cuenta propia (USD 99/año) — ver nota al inicio de la etapa.
-- [ ] En developer.apple.com → Certificates, IDs & Profiles → Identifiers → crear **Pass Type ID** `pass.app.wafi.card`.
-- [ ] Crear el certificado de ese Pass Type ID (CSR desde Acceso a Llaveros) → descargar `.cer` → doble clic para importarlo → en Acceso a Llaveros exportarlo como `.p12` con contraseña.
-- [ ] Anotar el **Team ID** (developer.apple.com → Membership, 10 caracteres).
-- [ ] Cargar todo con **un comando** (pide la contraseña del `.p12` en la terminal, verifica cert y clave, actualiza `.env.local` y opcionalmente Vercel):
+- [ ] Acceso a una cuenta de Apple Developer. **Prototipo:** la del jefe de Martín (cuenta Individual: él emite el certificado a partir del CSR de Martín, ver abajo). **Piloto real:** cuenta propia (USD 99/año) — ver nota al inicio de la etapa.
+- [ ] **Pedido de certificado (CSR), sin Acceso a Llaveros:** `bash scripts/apple-cert.sh csr`. Genera la clave privada en `~/.wafi/apple/pass-type-id.key` (fuera del repo, permisos 600 — **hacer backup en un gestor de contraseñas**) y el pedido `~/.wafi/apple/wafi-pass.certSigningRequest`, que es público.
+- [ ] Quien administre la cuenta: developer.apple.com → Certificates, IDs & Profiles → Identifiers → **+** → **Pass Type IDs** → `pass.app.wafi.card` → en ese identificador, **Create Certificate** → subir el `.certSigningRequest` → descargar el `.cer`. Anotar el **Team ID** (Membership details, 10 caracteres).
+  > La cuenta del jefe resultó ser **Individual**: esas cuentas no pueden sumar miembros al portal de developer (la invitación solo da acceso a App Store Connect). Por eso el certificado lo emite él con el CSR de Martín. La clave privada nunca sale de la Mac de Martín.
+- [ ] Cargar todo con un comando (verifica que el `.cer` sea del Pass Type ID y que empareje con la clave; actualiza `.env.local` y opcionalmente Vercel):
   ```bash
-  bash scripts/load-apple-cert.sh ~/Downloads/<archivo>.p12 <TEAM_ID>
+  bash scripts/apple-cert.sh load ~/Downloads/pass.cer <TEAM_ID>
   ```
+  También acepta un `.p12` exportado de Llaveros (pide la contraseña en la terminal).
   El certificado intermedio **WWDR G4 ya viene en el código** (`src/lib/wallet/apple/wwdr.ts`, es público); no hace falta descargarlo. Variables resultantes: `APPLE_TEAM_ID`, `APPLE_PASS_TYPE_ID`, `APPLE_PASS_CERT_B64`, `APPLE_PASS_KEY_B64` (la clave se guarda sin contraseña).
 - [ ] Verificar la firma real: `npm run check:pkpass -- ~/Desktop/wafi-prueba.pkpass` y abrir ese archivo desde el iPhone (AirDrop o Mail): tiene que ofrecer "Agregar".
 
