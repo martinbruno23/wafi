@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
     "e2e": "tsx scripts/e2e-check.ts",
     "e2e:apple": "tsx scripts/apple-e2e-check.ts",

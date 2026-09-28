@@ -65,7 +65,10 @@ describe("toScanState", () => {
     stampsRequired: 10,
     prizeDescription: "Café gratis",
     logoUrl: null,
+    coverUrl: null,
+    programName: null,
     isActive: true,
+    googleClassId: null,
   };
 
   const customer: Customer = { id: "c1", email: "martin@gmail.com" };
@@ -78,6 +81,7 @@ describe("toScanState", () => {
     currentStamps: 7,
     totalStamps: 7,
     prizesRedeemed: 0,
+    googleObjectId: null,
   };
 
   it("arma el estado completo sin premio", () => {

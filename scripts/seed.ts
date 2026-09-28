@@ -1,6 +1,10 @@
 /**
- * Crea el comercio demo y su usuario de dashboard.
- * Correr con: npx tsx scripts/seed.ts
+ * Crea los comercios demo y un usuario de dashboard para cada uno.
+ * Idempotente: se puede correr las veces que haga falta.
+ * Correr con: npm run seed
+ *
+ * Cada usuario pertenece a un solo comercio: `requireMerchantSession` asume
+ * una membresía por usuario.
  */
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
@@ -19,8 +23,48 @@ function loadEnv() {
 
 loadEnv();
 
-const DEMO_EMAIL = "demo@wafi.test";
-const DEMO_PASSWORD = "wafi-demo-1234";
+/** URL pública de los assets: Google Wallet los descarga, así que no sirve localhost. */
+const ASSETS = "https://wafi-iota.vercel.app";
+
+type DemoMerchant = {
+  merchant: Record<string, unknown> & { slug: string; name: string };
+  user: { email: string; password: string };
+};
+
+const DEMOS: DemoMerchant[] = [
+  {
+    merchant: {
+      slug: "cafe-prueba",
+      name: "Café de Prueba",
+      address: "Av. Siempreviva 742",
+      brand_color: "#8B5E3C",
+      stamps_required: 5,
+      prize_description: "Café gratis",
+      is_active: true,
+    },
+    user: { email: "demo@wafi.test", password: "wafi-demo-1234" },
+  },
+  {
+    // Demo para mostrarle a Batata Cofi (batatacofi.com) cómo se vería su
+    // tarjeta. Usa su marca: es para presentarle la propuesta al dueño, no
+    // para sus clientes. Slug no obvio para que no lo encuentre cualquiera.
+    // Su programa real es por puntos con 5 niveles; acá se muestra con la
+    // mecánica de sellos de WAFI.
+    merchant: {
+      slug: "batata-demo",
+      name: "Batata Cofi",
+      program_name: "Batateros Club",
+      address: "Avellaneda, Buenos Aires",
+      brand_color: "#7B2D3B",
+      logo_url: `${ASSETS}/demo/batata/logo.png`,
+      cover_url: `${ASSETS}/demo/batata/hero.png`,
+      stamps_required: 5,
+      prize_description: "Tu premio Bienvenida Batatera",
+      is_active: true,
+    },
+    user: { email: "batata-demo@wafi.test", password: "wafi-batata-1234" },
+  },
+];
 
 const db = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,62 +72,43 @@ const db = createClient(
   { auth: { persistSession: false } },
 );
 
-async function main() {
-  // 1. Comercio demo.
-  const { data: merchant, error: merchantError } = await db
-    .from("merchants")
-    .upsert(
-      {
-        slug: "cafe-prueba",
-        name: "Café de Prueba",
-        address: "Av. Siempreviva 742",
-        brand_color: "#8B5E3C",
-        stamps_required: 5,
-        prize_description: "Café gratis",
-        is_active: true,
-      },
-      { onConflict: "slug" },
-    )
-    .select("id, name, slug, stamps_required")
-    .single();
-
-  if (merchantError) throw merchantError;
-  console.log(`✓ Comercio: ${merchant.name} (${merchant.slug})`);
-
-  // 2. Usuario de dashboard (idempotente: si ya existe, lo buscamos).
-  let userId: string | undefined;
-
-  const { data: created, error: createError } = await db.auth.admin.createUser({
-    email: DEMO_EMAIL,
-    password: DEMO_PASSWORD,
+async function ensureUser(email: string, password: string): Promise<string> {
+  const { data: created, error } = await db.auth.admin.createUser({
+    email,
+    password,
     email_confirm: true,
   });
+  if (created?.user) return created.user.id;
 
-  if (created?.user) {
-    userId = created.user.id;
-    console.log(`✓ Usuario creado: ${DEMO_EMAIL}`);
-  } else {
-    const { data: list } = await db.auth.admin.listUsers({ perPage: 1000 });
-    userId = list?.users.find((u) => u.email === DEMO_EMAIL)?.id;
-    if (!userId) throw createError ?? new Error("No se pudo crear el usuario demo");
-    console.log(`✓ Usuario ya existía: ${DEMO_EMAIL}`);
-  }
+  const { data: list } = await db.auth.admin.listUsers({ perPage: 1000 });
+  const id = list?.users.find((u) => u.email === email)?.id;
+  if (!id) throw error ?? new Error(`No se pudo crear el usuario ${email}`);
+  return id;
+}
 
-  // 3. Membresía.
-  const { error: membershipError } = await db
-    .from("merchant_users")
-    .upsert(
-      { user_id: userId, merchant_id: merchant.id, role: "owner" },
-      { onConflict: "user_id,merchant_id" },
+async function main() {
+  for (const { merchant: m, user } of DEMOS) {
+    const { data: merchant, error } = await db
+      .from("merchants")
+      .upsert(m, { onConflict: "slug" })
+      .select("id, name, slug, stamps_required")
+      .single();
+    if (error) throw error;
+
+    const userId = await ensureUser(user.email, user.password);
+    const { error: membershipError } = await db
+      .from("merchant_users")
+      .upsert(
+        { user_id: userId, merchant_id: merchant.id, role: "owner" },
+        { onConflict: "user_id,merchant_id" },
+      );
+    if (membershipError) throw membershipError;
+
+    console.log(
+      `✓ ${merchant.name} — /j/${merchant.slug} (${merchant.stamps_required} sellos)` +
+        ` · dashboard: ${user.email} / ${user.password}`,
     );
-
-  if (membershipError) throw membershipError;
-  console.log("✓ Membresía vinculada");
-
-  console.log(
-    `\nListo. Login del dashboard: ${DEMO_EMAIL} / ${DEMO_PASSWORD}` +
-      `\nLanding de alta: /j/${merchant.slug} (${merchant.stamps_required} sellos)`,
-  );
+  }
 }
 
 main().catch((error) => {

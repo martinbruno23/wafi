@@ -56,27 +56,38 @@ function balanceText(card: Card, merchant: Merchant): string {
   return `${card.currentStamps} de ${merchant.stampsRequired} sellos`;
 }
 
-function loyaltyClassBody(merchant: Merchant) {
-  // Google rechaza la clase sin programLogo, así que los comercios que todavía
-  // no cargaron el suyo usan el logo de WAFI. La URL tiene que ser pública:
+const imageDescription = (text: string) => ({
+  defaultValue: { language: "es-AR", value: text },
+});
+
+/**
+ * La tarjeta es del café, no de WAFI: el cliente ve la marca del comercio
+ * (emisor = nombre del café, título = su programa, su logo, su color, su
+ * banner). WAFI solo aparece como fallback de logo si el café no cargó uno.
+ */
+export function loyaltyClassBody(merchant: Merchant) {
+  // Google rechaza la clase sin programLogo. La URL tiene que ser pública:
   // Google la descarga desde sus servidores (no sirve localhost).
   const logoUri = merchant.logoUrl ?? `${env.publicAssetsUrl}/wafi-logo.png`;
 
   return {
     id: classIdFor(merchant.slug),
-    issuerName: "WAFI",
-    programName: merchant.name,
+    issuerName: merchant.name,
+    programName: merchant.programName ?? merchant.name,
     reviewStatus: "UNDER_REVIEW",
     hexBackgroundColor: merchant.brandColor,
     programLogo: {
       sourceUri: { uri: logoUri },
-      contentDescription: {
-        defaultValue: {
-          language: "es-AR",
-          value: merchant.logoUrl ? `Logo de ${merchant.name}` : "Logo de WAFI",
-        },
-      },
+      contentDescription: imageDescription(`Logo de ${merchant.name}`),
     },
+    ...(merchant.coverUrl
+      ? {
+          heroImage: {
+            sourceUri: { uri: merchant.coverUrl },
+            contentDescription: imageDescription(merchant.programName ?? merchant.name),
+          },
+        }
+      : {}),
   };
 }
 

@@ -12,6 +12,10 @@ export type Merchant = {
   stampsRequired: number;
   prizeDescription: string;
   logoUrl: string | null;
+  /** Imagen ancha del comercio: banner superior del pass de Google. */
+  coverUrl: string | null;
+  /** Nombre del programa (ej. "Batateros Club"); si falta, se usa `name`. */
+  programName: string | null;
   isActive: boolean;
   /** LoyaltyClass de Google Wallet, si ya se creó (SPEC §8.1). */
   googleClassId: string | null;

@@ -27,6 +27,8 @@ const merchant = {
   stampsRequired: 5,
   prizeDescription: "Café gratis",
   logoUrl: null,
+  coverUrl: null,
+  programName: null,
   isActive: true,
   googleClassId: null,
 };
