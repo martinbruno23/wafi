@@ -1,5 +1,5 @@
 import "server-only";
-import sharp from "sharp";
+import type { Sharp, SharpOptions } from "sharp";
 import { contrastForeground } from "@/lib/color";
 import type { Card, Merchant } from "@/lib/domain/card";
 import { APPLE_ICON_FILES, APPLE_LOGO_FILES } from "./assets.generated";
@@ -15,7 +15,23 @@ import { stampLayout } from "./strip-layout";
  *
  * Nada de esto puede impedir que se genere el pass: ante cualquier falla se
  * usan los assets de WAFI (o se omite la franja, y el pass vuelve al texto).
+ * Por eso `sharp` se carga recién cuando hace falta: es un módulo nativo, y si
+ * no carga en el servidor (pasó en Vercel, 2026-09-28), importarlo arriba
+ * tumbaba la generación entera del pass.
  */
+
+type SharpFactory = (input?: Buffer | SharpOptions, options?: SharpOptions) => Sharp;
+let sharpModule: Promise<SharpFactory | null> | null = null;
+
+function loadSharp(): Promise<SharpFactory | null> {
+  sharpModule ??= import("sharp")
+    .then((m) => (m.default ?? m) as unknown as SharpFactory)
+    .catch((error) => {
+      console.error("[apple-wallet] no se pudo cargar sharp, se usan assets de WAFI:", error);
+      return null;
+    });
+  return sharpModule;
+}
 
 type Files = Record<string, Buffer>;
 
@@ -50,8 +66,9 @@ const SCALES = [
 ] as const;
 
 export async function logoFiles(merchant: Merchant): Promise<{ files: Files; wide: boolean }> {
-  const src = merchant.logoWideUrl ? await fetchImage(merchant.logoWideUrl) : null;
-  if (src) {
+  const sharp = await loadSharp();
+  const src = sharp && merchant.logoWideUrl ? await fetchImage(merchant.logoWideUrl) : null;
+  if (sharp && src) {
     try {
       const files: Files = {};
       for (const [suffix, s] of SCALES) {
@@ -69,8 +86,9 @@ export async function logoFiles(merchant: Merchant): Promise<{ files: Files; wid
 }
 
 export async function iconFiles(merchant: Merchant): Promise<Files> {
-  const src = merchant.logoUrl ? await fetchImage(merchant.logoUrl) : null;
-  if (src) {
+  const sharp = await loadSharp();
+  const src = sharp && merchant.logoUrl ? await fetchImage(merchant.logoUrl) : null;
+  if (sharp && src) {
     try {
       const files: Files = {};
       for (const [suffix, s] of SCALES) {
@@ -95,6 +113,7 @@ const EMPTY_OPACITY = 0.28;
 
 /** Un sello a partir de la silueta del comercio, en el color de contraste. */
 async function stampFromIcon(
+  sharp: SharpFactory,
   icon: Buffer,
   w: number,
   h: number,
@@ -141,6 +160,9 @@ export async function stripFiles(card: Card, merchant: Merchant): Promise<Files 
   const cached = stripCache.get(key);
   if (cached) return cached;
 
+  const sharp = await loadSharp();
+  if (!sharp) return null;
+
   try {
     const fg = contrastForeground(merchant.brandColor);
     const dark = fg !== "#FFFFFF";
@@ -154,7 +176,7 @@ export async function stripFiles(card: Card, merchant: Merchant): Promise<Files 
       boxes.map(async (b, i) => {
         const isFilled = i < filled;
         const input = icon
-          ? await stampFromIcon(icon, b.w, b.h, dark, isFilled ? 1 : EMPTY_OPACITY)
+          ? await stampFromIcon(sharp, icon, b.w, b.h, dark, isFilled ? 1 : EMPTY_OPACITY)
           : circleStamp(b.w, fg, merchant.brandColor, isFilled);
         return { input, left: b.x, top: b.y };
       }),
