@@ -28,7 +28,8 @@ export type PassJson = {
   serialNumber: string;
   organizationName: string;
   description: string;
-  logoText: string;
+  /** Nombre al lado del logo; se omite si el logo ya es el wordmark del comercio. */
+  logoText?: string;
   backgroundColor: string;
   foregroundColor: string;
   labelColor: string;
@@ -62,6 +63,14 @@ export type PassContentInput = {
   teamId: string;
   /** Ubicación del café: iOS sugiere el pass en el lockscreen al llegar. */
   location?: { lat: number; lng: number } | null;
+  /**
+   * Si el pass lleva la franja con los sellos dibujados. Con franja, el
+   * progreso lo muestra la imagen y no hay texto grande; sin franja (si la
+   * imagen no se pudo generar), vuelve el campo principal con el texto.
+   */
+  hasStrip: boolean;
+  /** Si el pass lleva el logo apaisado del comercio (ya dice su nombre). */
+  hasWideLogo: boolean;
 };
 
 /** "#8B5E3C" → "rgb(139, 94, 60)". Apple solo acepta colores en formato rgb(). */
@@ -91,31 +100,48 @@ export function logoVariantFor(brandColor: string): "light" | "dark" {
   return contrastForeground(brandColor) === "#FFFFFF" ? "light" : "dark";
 }
 
+/** "1 sello" / "3 sellos". */
+export function stampsLabel(n: number): string {
+  return n === 1 ? "1 sello" : `${n} sellos`;
+}
+
 /**
  * Texto de la notificación que muestra iOS cuando se actualiza el pass.
- * Apple exige que contenga `%@`, que se reemplaza por el valor nuevo del campo.
+ * Va en el campo "TE FALTAN" / "PREMIO DISPONIBLE", así que `%@` es lo que
+ * falta para el premio (o el premio, cuando ya está). Apple exige el `%@`.
  */
 export function stampsChangeMessage(
   merchantName: string,
   lastEvent: LastEvent,
   prizeReady: boolean,
 ): string {
-  if (lastEvent === "redeem") {
-    return `🎁 Canjeaste tu premio en ${merchantName}. Ahora vas %@`;
-  }
   if (prizeReady) {
-    return `🎉 ¡Completaste tu tarjeta en ${merchantName}! %@ — pedí tu premio`;
+    return `🎉 ¡Completaste tu tarjeta en ${merchantName}! Tu premio: %@`;
   }
-  return `☕ Nuevo sello en ${merchantName}: %@`;
+  if (lastEvent === "redeem") {
+    return `🎁 Canjeaste tu premio en ${merchantName}. Para el próximo te faltan %@`;
+  }
+  return `☕ Nuevo sello en ${merchantName}: te faltan %@`;
 }
 
 export function buildPassJson(input: PassContentInput): PassJson {
-  const { card, merchant, authToken, lastEvent, appUrl, passTypeId, teamId, location } =
-    input;
+  const {
+    card,
+    merchant,
+    authToken,
+    lastEvent,
+    appUrl,
+    passTypeId,
+    teamId,
+    location,
+    hasStrip,
+    hasWideLogo,
+  } = input;
 
   const prizeReady = hasPrize(card, merchant);
   const current = card.currentStamps;
   const required = merchant.stampsRequired;
+  const remaining = Math.max(0, required - current);
 
   const fg = contrastForeground(merchant.brandColor);
 
@@ -137,7 +163,8 @@ export function buildPassJson(input: PassContentInput): PassJson {
     serialNumber: card.id,
     organizationName: merchant.name,
     description: `Tarjeta de sellos de ${merchant.name}`,
-    logoText: merchant.name,
+    // Con el logo apaisado del comercio, repetir el nombre al lado sobra.
+    ...(hasWideLogo ? {} : { logoText: merchant.name }),
     backgroundColor: hexToRgb(merchant.brandColor),
     foregroundColor: hexToRgb(fg),
     labelColor: mixHex(fg, merchant.brandColor, 0.3),
@@ -167,24 +194,40 @@ export function buildPassJson(input: PassContentInput): PassJson {
       : {}),
     storeCard: {
       headerFields: [{ key: "stamps", label: "SELLOS", value: `${current}/${required}` }],
-      // La notificación va en el campo principal: verificado en un iPhone
-      // real (2026-09-28). Si un cliente no la recibe, lo primero es su
-      // ajuste de iOS → Notificaciones → Wallet (el interruptor del pase no
-      // alcanza si el de la app está apagado); fue la causa en la prueba.
-      primaryFields: [
-        {
-          key: "progress",
-          ...(prizeReady
-            ? { label: "🎉 PREMIO DISPONIBLE", value: merchant.prizeDescription }
-            : { label: "TU PROGRESO", value: `${current} de ${required} sellos` }),
-          changeMessage: stampsChangeMessage(merchant.name, lastEvent, prizeReady),
-        },
-      ],
-      secondaryFields: [
-        prizeReady
-          ? { key: "prize", label: "CÓMO CANJEARLO", value: "Mostrá este QR al pagar" }
-          : { key: "prize", label: "PREMIO", value: merchant.prizeDescription },
-      ],
+      // Con franja, el progreso lo muestra la imagen y no hay texto grande.
+      primaryFields: hasStrip
+        ? []
+        : [
+            {
+              key: "progress",
+              label: "TU PROGRESO",
+              value: `${current} de ${required} sellos`,
+            },
+          ],
+      // La notificación va en "remaining": su valor cambia con cada sello y
+      // canje, así que iOS la dispara siempre. Si un cliente no la recibe, lo
+      // primero es su ajuste de iOS → Notificaciones → Wallet (el interruptor
+      // del pase no alcanza si el de la app está apagado); fue la causa en la
+      // prueba en un iPhone real (2026-09-28).
+      secondaryFields: prizeReady
+        ? [
+            {
+              key: "remaining",
+              label: "🎉 PREMIO DISPONIBLE",
+              value: merchant.prizeDescription,
+              changeMessage: stampsChangeMessage(merchant.name, lastEvent, true),
+            },
+            { key: "prize", label: "CÓMO CANJEARLO", value: "Mostrá este QR al pagar" },
+          ]
+        : [
+            {
+              key: "remaining",
+              label: "TE FALTAN",
+              value: stampsLabel(remaining),
+              changeMessage: stampsChangeMessage(merchant.name, lastEvent, false),
+            },
+            { key: "prize", label: "PREMIO", value: merchant.prizeDescription },
+          ],
       auxiliaryFields,
       backFields: [
         {

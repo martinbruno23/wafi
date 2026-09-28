@@ -58,6 +58,8 @@ const DEMOS: DemoMerchant[] = [
       brand_color: "#7B2D3B",
       logo_url: `${ASSETS}/demo/batata/logo.png`,
       cover_url: `${ASSETS}/demo/batata/hero.png`,
+      logo_wide_url: `${ASSETS}/demo/batata/logo-wide.png`,
+      stamp_icon_url: `${ASSETS}/demo/batata/stamp.png`,
       stamps_required: 5,
       prize_description: "Tu premio Bienvenida Batatera",
       is_active: true,

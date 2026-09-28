@@ -54,7 +54,7 @@ const check = (label: string, ok: boolean, detail = "") => {
   if (!ok) failures++;
 };
 
-const buf = buildPkpass({
+const buf = await buildPkpass({
   card: {
     id: "3f1c2a9e-0000-4000-8000-000000000001",
     customerId: "c1",
@@ -75,6 +75,8 @@ const buf = buildPkpass({
     logoUrl: null,
     coverUrl: null,
     programName: null,
+    logoWideUrl: null,
+    stampIconUrl: null,
     isActive: true,
     googleClassId: null,
   },

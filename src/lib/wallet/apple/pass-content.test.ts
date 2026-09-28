@@ -5,6 +5,7 @@ import {
   mixHex,
   logoVariantFor,
   stampsChangeMessage,
+  stampsLabel,
   type PassContentInput,
 } from "./pass-content";
 import type { Card, Merchant } from "@/lib/domain/card";
@@ -19,6 +20,8 @@ const merchant: Merchant = {
   logoUrl: null,
   coverUrl: null,
   programName: null,
+  logoWideUrl: null,
+  stampIconUrl: null,
   isActive: true,
   googleClassId: null,
 };
@@ -42,6 +45,8 @@ const base: PassContentInput = {
   appUrl: "https://wafi-iota.vercel.app",
   passTypeId: "pass.app.wafi.card",
   teamId: "ABCDE12345",
+  hasStrip: true,
+  hasWideLogo: false,
 };
 
 describe("colores", () => {
@@ -76,9 +81,20 @@ describe("stampsChangeMessage", () => {
   });
 
   it("distingue sello, tarjeta completa y canje", () => {
-    expect(stampsChangeMessage("Batata", "stamp", false)).toMatch(/Nuevo sello en Batata/);
-    expect(stampsChangeMessage("Batata", "stamp", true)).toMatch(/Completaste/);
-    expect(stampsChangeMessage("Batata", "redeem", false)).toMatch(/Canjeaste/);
+    expect(stampsChangeMessage("Batata", "stamp", false)).toBe("☕ Nuevo sello en Batata: te faltan %@");
+    expect(stampsChangeMessage("Batata", "stamp", true)).toMatch(/Completaste tu tarjeta en Batata/);
+    expect(stampsChangeMessage("Batata", "redeem", false)).toMatch(/Canjeaste tu premio en Batata/);
+  });
+
+  it("el premio listo gana aunque el último movimiento sea un canje", () => {
+    // Ej.: tenía 12 de 5, canjeó uno y le quedan 7: sigue habiendo premio.
+    expect(stampsChangeMessage("Batata", "redeem", true)).toMatch(/Completaste/);
+  });
+
+  it("singular y plural", () => {
+    expect(stampsLabel(1)).toBe("1 sello");
+    expect(stampsLabel(0)).toBe("0 sellos");
+    expect(stampsLabel(3)).toBe("3 sellos");
   });
 });
 
@@ -105,21 +121,46 @@ describe("buildPassJson", () => {
     expect(bc.message).toBe("qr-token-abc");
   });
 
-  it("muestra el progreso sin premio", () => {
+  it("con franja: sin texto grande, y cuánto falta con la notificación", () => {
     const p = buildPassJson(base).storeCard;
-    expect(p.headerFields[0].value).toBe("3/5");
+    expect(p.headerFields[0]).toEqual({ key: "stamps", label: "SELLOS", value: "3/5" });
+    expect(p.primaryFields).toEqual([]);
+    expect(p.secondaryFields[0]).toMatchObject({
+      key: "remaining",
+      label: "TE FALTAN",
+      value: "2 sellos",
+      changeMessage: "☕ Nuevo sello en Café de Prueba: te faltan %@",
+    });
+    expect(p.secondaryFields[1]).toMatchObject({ label: "PREMIO", value: "Café gratis" });
+  });
+
+  it("sin franja (si la imagen falló), vuelve el progreso en texto", () => {
+    const p = buildPassJson({ ...base, hasStrip: false }).storeCard;
     expect(p.primaryFields[0]).toMatchObject({ label: "TU PROGRESO", value: "3 de 5 sellos" });
-    expect(p.secondaryFields[0]).toMatchObject({ label: "PREMIO", value: "Café gratis" });
   });
 
   it("destaca el premio cuando la tarjeta está completa", () => {
     const p = buildPassJson({ ...base, card: { ...card, currentStamps: 5 } }).storeCard;
-    expect(p.primaryFields[0]).toMatchObject({
+    expect(p.secondaryFields[0]).toMatchObject({
+      key: "remaining",
       label: "🎉 PREMIO DISPONIBLE",
       value: "Café gratis",
     });
-    expect(p.primaryFields[0].changeMessage).toMatch(/Completaste/);
+    expect(p.secondaryFields[0].changeMessage).toMatch(/Completaste/);
     expect(p.headerFields[0].changeMessage).toBeUndefined();
+  });
+
+  it("el campo de la notificación mantiene la misma clave en todos los estados", () => {
+    // iOS compara por clave: si cambia, no detecta el cambio y no notifica.
+    const keys = [0, 3, 5].map(
+      (n) => buildPassJson({ ...base, card: { ...card, currentStamps: n } }).storeCard.secondaryFields[0].key,
+    );
+    expect(new Set(keys)).toEqual(new Set(["remaining"]));
+  });
+
+  it("con el logo apaisado del café no repite el nombre al lado", () => {
+    expect(buildPassJson(base).logoText).toBe("Café de Prueba");
+    expect(buildPassJson({ ...base, hasWideLogo: true }).logoText).toBeUndefined();
   });
 
   it("cuenta los premios canjeados solo si hay alguno", () => {

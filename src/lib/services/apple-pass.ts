@@ -65,7 +65,7 @@ export async function loadApplePassData(cardId: string): Promise<ApplePassData |
   };
 }
 
-export function renderApplePass(data: ApplePassData): Buffer {
+export function renderApplePass(data: ApplePassData): Promise<Buffer> {
   return buildPkpass({
     card: data.card,
     merchant: data.merchant,

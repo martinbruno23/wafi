@@ -16,6 +16,10 @@ export type Merchant = {
   coverUrl: string | null;
   /** Nombre del programa (ej. "Batateros Club"); si falta, se usa `name`. */
   programName: string | null;
+  /** Logo apaisado, claro, para fondos del color del comercio (pass de Apple). */
+  logoWideUrl: string | null;
+  /** Silueta (PNG con transparencia) para dibujar cada sello; si falta, círculos. */
+  stampIconUrl: string | null;
   isActive: boolean;
   /** LoyaltyClass de Google Wallet, si ya se creó (SPEC §8.1). */
   googleClassId: string | null;

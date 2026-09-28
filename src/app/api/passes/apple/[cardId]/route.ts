@@ -30,7 +30,7 @@ export async function GET(
   }
 
   try {
-    const pkpass = renderApplePass(data);
+    const pkpass = await renderApplePass(data);
     return new Response(new Uint8Array(pkpass), {
       headers: {
         "Content-Type": "application/vnd.apple.pkpass",

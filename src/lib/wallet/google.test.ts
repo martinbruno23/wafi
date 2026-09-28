@@ -17,6 +17,8 @@ const batata: Merchant = {
   logoUrl: "https://wafi-iota.vercel.app/demo/batata/logo.png",
   coverUrl: "https://wafi-iota.vercel.app/demo/batata/hero.png",
   programName: "Batateros Club",
+  logoWideUrl: null,
+  stampIconUrl: null,
   isActive: true,
   googleClassId: null,
 };

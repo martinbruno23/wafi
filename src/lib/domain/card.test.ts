@@ -67,6 +67,8 @@ describe("toScanState", () => {
     logoUrl: null,
     coverUrl: null,
     programName: null,
+    logoWideUrl: null,
+    stampIconUrl: null,
     isActive: true,
     googleClassId: null,
   };

@@ -36,6 +36,8 @@ type MerchantRow = {
   logo_url: string | null;
   cover_url?: string | null;
   program_name?: string | null;
+  logo_wide_url?: string | null;
+  stamp_icon_url?: string | null;
   is_active: boolean;
   google_class_id?: string | null;
 };
@@ -62,6 +64,8 @@ export function toMerchant(row: MerchantRow): Merchant {
     logoUrl: row.logo_url,
     coverUrl: row.cover_url ?? null,
     programName: row.program_name ?? null,
+    logoWideUrl: row.logo_wide_url ?? null,
+    stampIconUrl: row.stamp_icon_url ?? null,
     isActive: row.is_active,
     googleClassId: row.google_class_id ?? null,
   };
@@ -81,7 +85,7 @@ export function toCard(row: CardRow): Card {
 }
 
 export const MERCHANT_COLS =
-  "id, slug, name, brand_color, stamps_required, prize_description, logo_url, cover_url, program_name, is_active, google_class_id";
+  "id, slug, name, brand_color, stamps_required, prize_description, logo_url, cover_url, program_name, logo_wide_url, stamp_icon_url, is_active, google_class_id";
 export const CARD_COLS =
   "id, customer_id, merchant_id, qr_token, current_stamps, total_stamps, prizes_redeemed, google_object_id";
 

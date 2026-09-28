@@ -21,7 +21,7 @@ export async function GET(
   }
 
   try {
-    return new Response(new Uint8Array(renderApplePass(data)), {
+    return new Response(new Uint8Array(await renderApplePass(data)), {
       headers: {
         "Content-Type": "application/vnd.apple.pkpass",
         "Last-Modified": data.updatedAt.toUTCString(),
