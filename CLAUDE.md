@@ -10,6 +10,7 @@ WAFI es una plataforma de fidelización para cafés de especialidad. **No hay ap
 ## Reglas del proyecto
 
 - **Idioma**: código y nombres en inglés; UI, copys y documentación en español rioplatense (voseo: "Juntá", "Escaneá").
+- **Imágenes (`sharp`)**: es un módulo nativo; se carga con `import()` dentro de las funciones, nunca arriba del archivo, y `next.config.ts` incluye sus binarios de Linux. Si se rompe, el pass tiene que salir igual (con assets de WAFI).
 - **Región**: las funciones corren en `gru1` (São Paulo, `vercel.json`), al lado de Supabase. No sacarlo: cada consulta cruzaría el continente.
 - **Stack**: Next.js (App Router) + TypeScript + Tailwind + shadcn/ui, Supabase (Postgres + Auth), deploy en Vercel. No introducir otras tecnologías sin registrarlo en el SPEC.
 - **Orden de wallets**: Google Wallet primero (Etapa 2), Apple Wallet después (Etapa 4). No invertir.
@@ -28,7 +29,7 @@ WAFI es una plataforma de fidelización para cafés de especialidad. **No hay ap
 - [x] Etapa 0 — Setup del proyecto (deploy en `https://wafi-iota.vercel.app/`, repo en `github.com/martinbruno23/wafi`)
 - [x] Etapa 1 — Core de dominio (schema + RLS + RPCs aplicados; 5 endpoints; 21 unit tests + E2E `npm run e2e` en verde)
 - [~] Etapa 2 — Enrolamiento + Google Wallet (todo andando en producción y verificado contra la API de Google; falta probar en un Android real y pedir la publicación del issuer)
-- [~] Etapa 4 — Apple Wallet ← **va antes que la 3.** Funcionando en un iPhone real de punta a punta: alta, registro, actualización automática por push (~2 s) y notificación en pantalla de bloqueo. Pendiente: logo del comercio en el pass (hoy sale la W).
+- [~] Etapa 4 — Apple Wallet ← **va antes que la 3.** Funcionando en un iPhone real de punta a punta: alta, registro, actualización automática por push (~2 s), notificación en pantalla de bloqueo, y pass con la marca del comercio (logo, ícono y franja de sellos dibujados).
 - [ ] Etapa 3 — Dashboard + Scanner
 - [ ] Etapa 5 — Landing del cliente + piloto
 
