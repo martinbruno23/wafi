@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { z } from "zod";
 import { enrollCustomer, EnrollmentError } from "@/lib/services/enrollment";
 import { issueGooglePass } from "@/lib/services/pass-issuance";
@@ -32,18 +32,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const { merchantSlug, email } = parsed.data;
+    const { merchantSlug, email, platform } = parsed.data;
 
     try {
       const { card, merchant, existing } = await enrollCustomer(merchantSlug, email);
 
-      // Los dos passes se ofrecen siempre que se pueda: el cliente puede
-      // cambiar de teléfono o agregarla desde otro dispositivo. Son
-      // independientes: si uno falla, el otro sigue.
-      const [saveUrl, pkpassUrl] = await Promise.all([
-        issueGooglePass(card, merchant, email),
-        applePassUrlFor(card.id),
-      ]);
+      // El link de Apple es barato (una lectura). El de Google implica
+      // llamadas a su API: solo se espera si el cliente está en Android.
+      // Desde iPhone o desde una compu se emite igual, pero después de
+      // responder (el cliente puede cambiar de teléfono más adelante).
+      const pkpassUrl = await applePassUrlFor(card.id);
+      let saveUrl: string | null = null;
+      if (platform === "google") {
+        saveUrl = await issueGooglePass(card, merchant, email);
+      } else {
+        after(() => issueGooglePass(card, merchant, email));
+      }
 
       return NextResponse.json({
         cardId: card.id,

@@ -16,6 +16,7 @@ type Phase =
   | { name: "form" }
   | { name: "submitting" }
   | { name: "redirecting" }
+  | { name: "added"; walletUrl: string }
   | { name: "done"; existing: boolean; walletUrl?: string }
   | { name: "qr"; dataUrl: string; existing: boolean }
   | { name: "error"; message: string };
@@ -86,6 +87,12 @@ export function EnrollForm({ merchantSlug, platform, brand, brandFg }: Props) {
     if (walletUrl && !body.existing) {
       setPhase({ name: "redirecting" });
       window.location.href = walletUrl;
+      // En iPhone, Safari muestra la tarjeta encima de esta página y el
+      // cliente vuelve acá al tocar "Agregar": la página tiene que confirmar
+      // en vez de quedarse en "Abriendo…". (Google, en cambio, navega fuera.)
+      if (platform === "apple") {
+        setTimeout(() => setPhase({ name: "added", walletUrl }), 1200);
+      }
       return;
     }
 
@@ -115,6 +122,35 @@ export function EnrollForm({ merchantSlug, platform, brand, brandFg }: Props) {
       >
         Abriendo {walletName}…
       </p>
+    );
+  }
+
+  if (phase.name === "added") {
+    return (
+      <section
+        className="flex w-full flex-col items-center gap-3 text-center"
+        role="status"
+      >
+        <h2 className="text-[17px] font-semibold">¡Listo! Tu tarjeta está lista 🎉</h2>
+        <p className="max-w-[300px] text-[15px] text-muted-foreground">
+          Tocá <strong>Agregar</strong> en la ventana de Apple Wallet. La tarjeta
+          se actualiza sola cada vez que sumás en el local.
+        </p>
+        {/* shoebox:// abre la app Wallet en iOS. */}
+        <a
+          href="shoebox://"
+          className="w-full rounded-[14px] px-5 py-3.5 text-center text-[15px] font-semibold"
+          style={{ background: brand, color: brandFg }}
+        >
+          Abrir Wallet
+        </a>
+        <a
+          href={phase.walletUrl}
+          className="text-[13px] text-muted-foreground underline underline-offset-2"
+        >
+          ¿No apareció la tarjeta? Agregala de nuevo
+        </a>
+      </section>
     );
   }
 

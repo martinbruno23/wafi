@@ -26,20 +26,22 @@ export async function issueGooglePass(
   const db = createAdminClient();
 
   try {
-    // La clase del comercio se crea una sola vez (lazy, en el primer alta).
-    const classId = await ensureLoyaltyClass(merchant);
+    // La clase del comercio se crea una sola vez, en el primer alta. Si el
+    // comercio cambia su marca, se actualiza aparte (npm run wallet:sync-classes),
+    // no en cada alta: son dos llamadas a Google que el cliente esperaría.
     if (!merchant.googleClassId) {
+      const classId = await ensureLoyaltyClass(merchant);
       await db
         .from("merchants")
         .update({ google_class_id: classId })
         .eq("id", merchant.id);
     }
 
-    const objectId = await createLoyaltyObject(card, merchant, {
-      email: customerEmail,
-    });
-
-    if (!card.googleObjectId) {
+    // El objeto se crea una vez por tarjeta. Si ya existe (re-agregar un pass
+    // borrado), alcanza con volver a firmar el link.
+    let objectId = card.googleObjectId;
+    if (!objectId) {
+      objectId = await createLoyaltyObject(card, merchant, { email: customerEmail });
       await db
         .from("cards")
         .update({ google_object_id: objectId })
