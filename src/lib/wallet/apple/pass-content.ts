@@ -166,18 +166,18 @@ export function buildPassJson(input: PassContentInput): PassJson {
         }
       : {}),
     storeCard: {
-      headerFields: [
+      headerFields: [{ key: "stamps", label: "SELLOS", value: `${current}/${required}` }],
+      // La notificación va en el campo principal: en un iPhone real
+      // (2026-09-28), con el changeMessage en headerFields el pass se
+      // actualizaba pero iOS no mostraba ninguna notificación.
+      primaryFields: [
         {
-          key: "stamps",
-          label: "SELLOS",
-          value: `${current}/${required}`,
+          key: "progress",
+          ...(prizeReady
+            ? { label: "🎉 PREMIO DISPONIBLE", value: merchant.prizeDescription }
+            : { label: "TU PROGRESO", value: `${current} de ${required} sellos` }),
           changeMessage: stampsChangeMessage(merchant.name, lastEvent, prizeReady),
         },
-      ],
-      primaryFields: [
-        prizeReady
-          ? { key: "progress", label: "🎉 PREMIO DISPONIBLE", value: merchant.prizeDescription }
-          : { key: "progress", label: "TU PROGRESO", value: `${current} de ${required} sellos` },
       ],
       secondaryFields: [
         prizeReady

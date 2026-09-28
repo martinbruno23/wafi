@@ -118,7 +118,8 @@ describe("buildPassJson", () => {
       label: "🎉 PREMIO DISPONIBLE",
       value: "Café gratis",
     });
-    expect(p.headerFields[0].changeMessage).toMatch(/Completaste/);
+    expect(p.primaryFields[0].changeMessage).toMatch(/Completaste/);
+    expect(p.headerFields[0].changeMessage).toBeUndefined();
   });
 
   it("cuenta los premios canjeados solo si hay alguno", () => {
